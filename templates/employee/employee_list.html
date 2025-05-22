@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Danh Sách Nhân Viên - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+
+{% block content %}
+{% if user.is_staff %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Danh Sách Nhân Viên</h5>
+                <a href="{% url 'employee:add_employee' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm Nhân Viên
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="search">Tìm Kiếm</label>
+                                <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Tìm theo tên hoặc ID...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="department">Phòng Ban</label>
+                                <select name="department" id="department" class="form-select">
+                                    <option value="">Tất Cả Phòng Ban</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {% if selected_department|stringformat:"s" == dept.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ dept.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="d-block">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Tìm Kiếm
+                                </button>
+                                <a href="{% url 'employee:employee_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-redo"></i> Làm Mới
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mã Nhân Viên</th>
+                                <th>Họ Tên</th>
+                                <th>Phòng Ban</th>
+                                <th>Chức Vụ</th>
+                                <th>Trạng Thái</th>
+                                <th>Lương Cơ Bản</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for employee in employees %}
+                            <tr>
+                                <td>{{ employee.employee_id }}</td>
+                                <td>{{ employee.user.get_full_name }}</td>
+                                <td>{{ employee.department.name }}</td>
+                                <td>{{ employee.position }}</td>
+                                <td>
+                                    <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if employee.is_active %}Đang Làm{% else %}Đã Nghỉ{% endif %}
+                                    </span>
+                                </td>
+                                <td>${{ employee.base_salary }}</td>
+                                <td>
+                                    <a href="{% url 'employee:edit_employee' employee.id %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">Không tìm thấy nhân viên nào</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if employees.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if employees.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ employees.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}">
+                                Trước
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Trước</span>
+                        </li>
+                        {% endif %}
+
+                        {% for num in employees.paginator.page_range %}
+                        {% if employees.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if employees.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ employees.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}">
+                                Tiếp
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Tiếp</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form when department selection changes
+document.getElementById('department').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %} 

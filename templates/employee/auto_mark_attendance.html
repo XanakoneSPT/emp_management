@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+
+{% block title %}Mark Attendance - Face Recognition{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Automatic Attendance - Face Recognition</h5>
+            </div>
+            <div class="card-body">
+                <!-- Add CSRF Token -->
+                {% csrf_token %}
+                
+                <!-- Camera Preview -->
+                <div class="text-center mb-4">
+                    <video id="video" width="100%" style="display: none;"></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    <img id="preview" class="img-fluid rounded mb-2" style="display: none;">
+                    
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                        <div class="spinner-grow text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-primary" id="processingText">Processing...</p>
+                    </div>
+                </div>
+
+                <!-- Status Display -->
+                <div id="statusDisplay" class="alert alert-info text-center mb-4" role="alert">
+                    Click "Start Camera" to begin face recognition
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="button" id="startCamera" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Start Camera
+                    </button>
+                    <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;">
+                        <i class="fas fa-camera-retro"></i> Capture Photo
+                    </button>
+                    <button type="button" id="retryButton" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+
+                <!-- Recognition Result -->
+                <div id="recognitionResult" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Recognition Result</h6>
+                            <div id="resultContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let preview = document.getElementById('preview');
+let startButton = document.getElementById('startCamera');
+let captureButton = document.getElementById('capturePhoto');
+let retryButton = document.getElementById('retryButton');
+let statusDisplay = document.getElementById('statusDisplay');
+let recognitionResult = document.getElementById('recognitionResult');
+let resultContent = document.getElementById('resultContent');
+let loadingSpinner = document.getElementById('loadingSpinner');
+let processingText = document.getElementById('processingText');
+let stream = null;
+
+// Processing states
+const PROCESSING_STATES = {
+    INITIALIZING: 'Initializing camera...',
+    CAPTURING: 'Capturing photo...',
+    PROCESSING: 'Processing face recognition...',
+    ANALYZING: 'Analyzing face features...',
+    MATCHING: 'Matching with database...',
+    RECORDING: 'Recording attendance...'
+};
+
+let processingInterval;
+
+function updateProcessingText() {
+    let states = Object.values(PROCESSING_STATES);
+    let currentIndex = states.indexOf(processingText.textContent);
+    let nextIndex = (currentIndex + 1) % states.length;
+    processingText.textContent = states[nextIndex];
+}
+
+function startProcessingAnimation() {
+    loadingSpinner.style.display = 'block';
+    processingText.textContent = PROCESSING_STATES.PROCESSING;
+    processingInterval = setInterval(updateProcessingText, 2000);
+}
+
+function stopProcessingAnimation() {
+    loadingSpinner.style.display = 'none';
+    clearInterval(processingInterval);
+}
+
+// Optimize image before sending
+async function optimizeImage(blob) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 640;
+            const MAX_HEIGHT = 480;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob(resolve, 'image/jpeg', 0.85);
+        };
+        img.src = URL.createObjectURL(blob);
+    });
+}
+
+// Error handling helper functions
+function getErrorMessage(data) {
+    const errorGuides = {
+        'invalid_file': {
+            message: 'Please upload only image files (jpg, png, etc.).',
+            suggestion: 'Try taking a new photo or selecting a different image file.'
+        },
+        'optimization_error': {
+            message: 'Unable to process the image.',
+            suggestion: 'Try taking a photo with better lighting and resolution.'
+        },
+        'image_load_error': {
+            message: 'Unable to load the image.',
+            suggestion: 'Try taking a new photo or using a different camera.'
+        },
+        'resize_error': {
+            message: 'Error processing image size.',
+            suggestion: 'Try taking a photo with your device in portrait orientation.'
+        },
+        'face_detection_error': {
+            message: 'Unable to detect face features.',
+            suggestion: 'Ensure good lighting and that your face is clearly visible.'
+        },
+        'no_face_detected': {
+            message: 'No face was detected in the image.',
+            suggestion: 'Make sure your face is clearly visible and well-lit.'
+        },
+        'multiple_faces': {
+            message: 'Multiple faces detected in the image.',
+            suggestion: 'Please ensure only your face is in the frame.'
+        },
+        'encoding_error': {
+            message: 'Unable to process facial features.',
+            suggestion: 'Try taking a photo with better lighting and a clear view of your face.'
+        },
+        'no_registered_employees': {
+            message: 'No registered employees found in the system.',
+            suggestion: 'Please contact your administrator to register your face.'
+        },
+        'encoding_load_error': {
+            message: 'Error loading registered face data.',
+            suggestion: 'Please contact your administrator to re-register your face.'
+        },
+        'comparison_error': {
+            message: 'Error comparing face data.',
+            suggestion: 'Try again with better lighting and a clear face view.'
+        },
+        'database_error': {
+            message: 'Error recording attendance.',
+            suggestion: 'Please try again. If the problem persists, contact your administrator.'
+        },
+        'low_confidence': {
+            message: 'Face not recognized with sufficient confidence.',
+            suggestion: 'Try again with better lighting and ensure your face is clearly visible.'
+        },
+        'unexpected_error': {
+            message: 'An unexpected error occurred.',
+            suggestion: 'Please try again or contact your administrator if the problem persists.'
+        }
+    };
+
+    const errorInfo = errorGuides[data.error_type] || {
+        message: data.message,
+        suggestion: 'Please try again or contact administrator if the problem persists.'
+    };
+
+    return `
+        <div class="text-center">
+            <div class="mb-2"><strong>${errorInfo.message}</strong></div>
+            <div class="text-muted"><i class="fas fa-info-circle"></i> ${errorInfo.suggestion}</div>
+        </div>
+    `;
+}
+
+// Start camera
+startButton.addEventListener('click', async () => {
+    try {
+        statusDisplay.innerHTML = PROCESSING_STATES.INITIALIZING;
+        statusDisplay.className = 'alert alert-info text-center mb-4';
+        
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        });
+        video.srcObject = stream;
+        video.style.display = 'block';
+        preview.style.display = 'none';
+        startButton.style.display = 'none';
+        captureButton.style.display = 'block';
+        retryButton.style.display = 'none';
+        recognitionResult.style.display = 'none';
+        statusDisplay.innerHTML = 'Camera is active. Click "Capture Photo" when ready.';
+        video.play();
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        statusDisplay.innerHTML = 'Error accessing camera. Please make sure you have granted camera permissions.';
+        statusDisplay.className = 'alert alert-danger text-center mb-4';
+    }
+});
+
+// Capture photo
+captureButton.addEventListener('click', async () => {
+    try {
+        statusDisplay.innerHTML = PROCESSING_STATES.CAPTURING;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        let image = canvas.toDataURL('image/jpeg');
+        preview.src = image;
+        preview.style.display = 'block';
+        video.style.display = 'none';
+        captureButton.style.display = 'none';
+        
+        startProcessingAnimation();
+        
+        try {
+            // Convert base64 to blob and optimize
+            const response = await fetch(image);
+            const blob = await response.blob();
+            
+            // Log blob details for debugging
+            console.log('Image blob size:', blob.size);
+            console.log('Image blob type:', blob.type);
+            
+            const optimizedBlob = await optimizeImage(blob);
+            console.log('Optimized blob size:', optimizedBlob.size);
+            
+            const formData = new FormData();
+            formData.append('face_image', optimizedBlob, 'capture.jpg');
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            console.log('CSRF Token present:', !!csrfToken);
+
+            // Send to server for recognition
+            const recognitionResponse = await fetch('{% url "employee:process_auto_attendance" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+
+            console.log('Response status:', recognitionResponse.status);
+            
+            if (!recognitionResponse.ok) {
+                const errorText = await recognitionResponse.text();
+                console.error('Server response:', errorText);
+                throw new Error(`HTTP error! status: ${recognitionResponse.status}, response: ${errorText}`);
+            }
+
+            const data = await recognitionResponse.json();
+            console.log('Server response data:', data);
+            
+            stopProcessingAnimation();
+
+            if (data.success) {
+                statusDisplay.className = 'alert alert-success text-center mb-4';
+                statusDisplay.innerHTML = data.message;
+                resultContent.innerHTML = `
+                    <div class="text-center">
+                        <h5>${data.employee_name}</h5>
+                        <p class="mb-1">Employee ID: ${data.employee_id}</p>
+                        <p class="mb-1">Department: ${data.department}</p>
+                        <p class="mb-1">Status: ${data.attendance_status}</p>
+                        <p class="mb-1">Time: ${data.timestamp}</p>
+                        <p class="mb-0">Confidence: ${data.confidence}</p>
+                    </div>
+                `;
+                recognitionResult.style.display = 'block';
+            } else {
+                console.error('Recognition failed:', data);
+                statusDisplay.className = 'alert alert-danger text-center mb-4';
+                statusDisplay.innerHTML = getErrorMessage(data);
+                recognitionResult.style.display = 'none';
+            }
+        } catch (fetchError) {
+            console.error('Fetch error:', fetchError);
+            throw fetchError;
+        }
+        
+        retryButton.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error details:', error);
+        stopProcessingAnimation();
+        statusDisplay.className = 'alert alert-danger text-center mb-4';
+        statusDisplay.innerHTML = getErrorMessage({
+            message: `Error: ${error.message}`,
+            error_type: 'unexpected_error'
+        });
+        retryButton.style.display = 'block';
+    } finally {
+        // Stop the camera
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+});
+
+// Retry button
+retryButton.addEventListener('click', () => {
+    preview.style.display = 'none';
+    retryButton.style.display = 'none';
+    recognitionResult.style.display = 'none';
+    startButton.style.display = 'block';
+    statusDisplay.className = 'alert alert-info text-center mb-4';
+    statusDisplay.innerHTML = 'Click "Start Camera" to begin face recognition';
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Danh Sách Chấm Công - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Danh Sách Chấm Công</h5>
+                <a href="{% url 'employee:manage_attendance' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Chấm Công Mới
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- Filters -->
+                <form method="get" class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="date_from" class="form-label">Từ Ngày</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="date_to" class="form-label">Đến Ngày</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="department" class="form-label">Phòng Ban</label>
+                                <select name="department" id="department" class="form-select">
+                                    <option value="">Tất Cả Phòng Ban</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {% if selected_department|stringformat:"s" == dept.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ dept.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="status" class="form-label">Trạng Thái</label>
+                                <select name="status" id="status" class="form-select">
+                                    <option value="">Tất Cả Trạng Thái</option>
+                                    {% for status_value, status_label in status_choices %}
+                                    <option value="{{ status_value }}" {% if selected_status == status_value %}selected{% endif %}>
+                                        {{ status_label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="search" class="form-label">Tìm Kiếm</label>
+                                <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Tên hoặc ID...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="d-block">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Tìm Kiếm
+                                </button>
+                                <a href="{% url 'employee:attendance_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-redo"></i> Làm Mới
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Attendance Records Table -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Mã NV</th>
+                                <th>Họ Tên</th>
+                                <th>Phòng Ban</th>
+                                <th>Giờ Vào</th>
+                                <th>Giờ Ra</th>
+                                <th>Giờ Làm</th>
+                                <th>Trạng Thái</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance_records %}
+                            <tr>
+                                <td>{{ record.date|date:"d/m/Y" }}</td>
+                                <td>{{ record.employee.employee_id }}</td>
+                                <td>{{ record.employee.user.get_full_name }}</td>
+                                <td>{{ record.employee.department.name }}</td>
+                                <td>{{ record.check_in|time:"H:i"|default:"-" }}</td>
+                                <td>{{ record.check_out|time:"H:i"|default:"-" }}</td>
+                                <td>{{ record.calculate_working_hours|floatformat:2 }} giờ</td>
+                                <td>
+                                    <span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {% if record.status == 'present' %}Có Mặt
+                                        {% elif record.status == 'absent' %}Vắng Mặt
+                                        {% elif record.status == 'late' %}Đi Muộn
+                                        {% elif record.status == 'half_day' %}Nửa Ngày
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'employee:admin_delete_attendance' record.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa bản ghi chấm công này?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center">Không tìm thấy bản ghi chấm công nào</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if attendance_records.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if attendance_records.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendance_records.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                Trước
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Trước</span>
+                        </li>
+                        {% endif %}
+
+                        {% for num in attendance_records.paginator.page_range %}
+                        {% if attendance_records.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if attendance_records.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendance_records.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                Tiếp
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Tiếp</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form when department or status selection changes
+document.getElementById('department').addEventListener('change', function() {
+    this.form.submit();
+});
+document.getElementById('status').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %} 

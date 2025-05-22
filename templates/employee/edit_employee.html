@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Employee - Employee Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-3">
+        <a href="{% url 'employee:employee_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Edit Employee: {{ employee.user.get_full_name }} ({{ employee.employee_id }})</h5>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    <i class="fas fa-trash"></i> Delete Employee
+                </button>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- User Account Information -->
+                        <div class="col-md-6 mb-3">
+                            <h6 class="mb-3">Account Information</h6>
+                            <div class="mb-3">
+                                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.password.id_for_label }}" class="form-label">Password (leave blank to keep current)</label>
+                                {{ form.password }}
+                                {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.confirm_password.id_for_label }}" class="form-label">Confirm Password</label>
+                                {{ form.confirm_password }}
+                                {% if form.confirm_password.errors %}
+                                <div class="invalid-feedback d-block">{{ form.confirm_password.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Employee Information -->
+                        <div class="col-md-6 mb-3">
+                            <h6 class="mb-3">Employee Information</h6>
+                            <div class="mb-3">
+                                <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
+                                {{ form.department }}
+                                {% if form.department.errors %}
+                                <div class="invalid-feedback d-block">{{ form.department.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.position.id_for_label }}" class="form-label">Position</label>
+                                {{ form.position }}
+                                {% if form.position.errors %}
+                                <div class="invalid-feedback d-block">{{ form.position.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
+                                {{ form.phone_number }}
+                                {% if form.phone_number.errors %}
+                                <div class="invalid-feedback d-block">{{ form.phone_number.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                <div class="invalid-feedback d-block">{{ form.address.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.joining_date.id_for_label }}" class="form-label">Joining Date</label>
+                                {{ form.joining_date }}
+                                {% if form.joining_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.joining_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Face Registration -->
+                        <div class="col-12 mb-4">
+                            <h6 class="mb-3">Face Registration</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <!-- Current Face Image -->
+                                    {% if employee.face_image %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Current Face ID</label>
+                                        <img src="{{ employee.face_image.url }}" alt="Current Face ID" class="img-fluid rounded mb-2">
+                                        <div class="mt-2">
+                                            <a href="{% url 'employee:regenerate_face_encoding' employee.id %}" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-sync"></i> Regenerate Face Data
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    <!-- Camera Preview -->
+                                    <div class="text-center mb-3">
+                                        <video id="video" width="100%" style="display: none;"></video>
+                                        <canvas id="canvas" style="display: none;"></canvas>
+                                        <img id="preview" class="img-fluid rounded mb-2" style="display: none;">
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" id="startCamera" class="btn btn-primary">
+                                            <i class="fas fa-camera"></i> Use Camera
+                                        </button>
+                                        <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;" data-employee-id="{{ employee.employee_id }}">
+                                            <i class="fas fa-camera-retro"></i> Capture Photo
+                                        </button>
+                                        <button type="button" id="uploadButton" class="btn btn-info" onclick="document.getElementById('face_image').click()">
+                                            <i class="fas fa-upload"></i> Upload Photo
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.face_image.id_for_label }}" class="form-label">New Face Image</label>
+                                        <input type="file" id="face_image" name="face_image" accept="image/*" class="form-control" style="display: none;">
+                                        {% if form.face_image.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.face_image.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Salary Information -->
+                        <div class="col-12">
+                            <h6 class="mb-3">Salary Information</h6>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.base_salary.id_for_label }}" class="form-label">Base Salary</label>
+                                    {{ form.base_salary }}
+                                    {% if form.base_salary.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.base_salary.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.hourly_rate.id_for_label }}" class="form-label">Hourly Rate</label>
+                                    {{ form.hourly_rate }}
+                                    {% if form.hourly_rate.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.hourly_rate.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.overtime_rate.id_for_label }}" class="form-label">Overtime Rate</label>
+                                    {{ form.overtime_rate }}
+                                    {% if form.overtime_rate.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.overtime_rate.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.standard_work_hours.id_for_label }}" class="form-label">Standard Work Hours</label>
+                                    {{ form.standard_work_hours }}
+                                    {% if form.standard_work_hours.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.standard_work_hours.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>Please correct the following errors:</strong>
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Employee
+                        </button>
+                        <a href="{% url 'employee:employee_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete employee <strong>{{ employee.user.get_full_name }}</strong> ({{ employee.employee_id }})?</p>
+                <p class="text-danger"><strong>Warning:</strong> This action cannot be undone. All associated data (attendance records, salary records, etc.) will be permanently deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'employee:delete_employee' employee.id %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete Employee
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Face registration with camera
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let preview = document.getElementById('preview');
+let startButton = document.getElementById('startCamera');
+let captureButton = document.getElementById('capturePhoto');
+let stream = null;
+
+// Handle file upload
+document.getElementById('face_image').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            video.style.display = 'none';
+            captureButton.style.display = 'none';
+        };
+        reader.readAsDataURL(this.files[0]);
+    }
+});
+
+// Start camera
+startButton.addEventListener('click', async () => {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        });
+        video.srcObject = stream;
+        video.style.display = 'block';
+        preview.style.display = 'none';
+        startButton.style.display = 'none';
+        captureButton.style.display = 'block';
+        video.play();
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        alert('Error accessing camera. Please make sure you have granted camera permissions.');
+    }
+});
+
+// Capture photo
+captureButton.addEventListener('click', () => {
+    const employeeId = captureButton.getAttribute('data-employee-id');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    let image = canvas.toDataURL('image/jpeg');
+    preview.src = image;
+    preview.style.display = 'block';
+    video.style.display = 'none';
+    captureButton.style.display = 'none';
+    
+    // Convert base64 to blob
+    fetch(image)
+        .then(res => res.blob())
+        .then(blob => {
+            // Use employee ID in the filename
+            const file = new File([blob], `${employeeId}.jpg`, { type: "image/jpeg" });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById('face_image').files = dataTransfer.files;
+        });
+    
+    // Stop the camera
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %} 

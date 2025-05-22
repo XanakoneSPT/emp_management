@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Danh Sách Lương - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Danh Sách Lương</h5>
+                <a href="{% url 'employee:generate_salary' %}" class="btn btn-primary">
+                    <i class="fas fa-calculator"></i> Tính Lương
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="month">Tháng</label>
+                                <select name="month" id="month" class="form-select">
+                                    {% for m in months %}
+                                    <option value="{{ m }}" {% if m == current_month %}selected{% endif %}>{{ m }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="year">Năm</label>
+                                <select name="year" id="year" class="form-select">
+                                    {% for y in years %}
+                                    <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="department">Phòng Ban</label>
+                                <select name="department" id="department" class="form-select">
+                                    <option value="">Tất Cả Phòng Ban</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {% if selected_department|stringformat:"s" == dept.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ dept.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="d-block">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Tìm Kiếm
+                                </button>
+                                <a href="{% url 'employee:salary_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-redo"></i> Làm Mới
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mã NV</th>
+                                <th>Họ Tên</th>
+                                <th>Phòng Ban</th>
+                                <th>Lương Cơ Bản</th>
+                                <th>Lương Giờ</th>
+                                <th>Lương Tăng Ca</th>
+                                <th>Tổng Lương</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for salary in salaries %}
+                            <tr>
+                                <td>{{ salary.employee.employee_id }}</td>
+                                <td>{{ salary.employee.user.get_full_name }}</td>
+                                <td>{{ salary.employee.department.name }}</td>
+                                <td>${{ salary.base_pay }}</td>
+                                <td>${{ salary.regular_hours_pay }}</td>
+                                <td>${{ salary.overtime_pay }}</td>
+                                <td>${{ salary.total_salary }}</td>
+                                <td>
+                                    <a href="{% url 'employee:salary_detail' salary.id %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i> Chi Tiết
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center">Không tìm thấy bản ghi lương nào</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if salaries.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if salaries.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ salaries.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}">
+                                Trước
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Trước</span>
+                        </li>
+                        {% endif %}
+
+                        {% for num in salaries.paginator.page_range %}
+                        {% if salaries.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if salaries.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ salaries.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}">
+                                Tiếp
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Tiếp</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form when month, year, or department selection changes
+document.getElementById('month').addEventListener('change', function() {
+    this.form.submit();
+});
+document.getElementById('year').addEventListener('change', function() {
+    this.form.submit();
+});
+document.getElementById('department').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %} 

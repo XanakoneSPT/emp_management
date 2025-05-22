@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Trang Chủ - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+
+{% block content %}
+{% if user.is_staff %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Tổng Số Nhân Viên</h5>
+                <p class="display-4">{{ total_employees }}</p>
+                <a href="{% url 'employee:employee_list' %}" class="btn btn-primary">Xem Tất Cả</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Có Mặt Hôm Nay</h5>
+                <p class="display-4">{{ present_today }}</p>
+                <a href="{% url 'employee:attendance_list' %}" class="btn btn-success">Danh Sách Chấm Công</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Phòng Ban</h5>
+                <p class="display-4">{{ departments.count }}</p>
+                <a href="{% url 'employee:department_list' %}" class="btn btn-info">Xem Tất Cả</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Thao Tác Nhanh</h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'employee:add_employee' %}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Thêm Nhân Viên
+                    </a>
+                    <a href="{% url 'employee:manage_attendance' %}" class="btn btn-success">
+                        <i class="fas fa-clock"></i> Chấm Công
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Chấm Công Gần Đây</h5>
+                <a href="{% url 'employee:manage_attendance' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-clock"></i> Quản Lý Chấm Công
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nhân Viên</th>
+                                <th>Phòng Ban</th>
+                                <th>Giờ Vào</th>
+                                <th>Giờ Ra</th>
+                                <th>Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in recent_attendance %}
+                            <tr>
+                                <td>{{ attendance.employee.user.get_full_name }}</td>
+                                <td>{{ attendance.employee.department.name }}</td>
+                                <td>{{ attendance.check_in|time }}</td>
+                                <td>{{ attendance.check_out|time|default:'-' }}</td>
+                                <td>
+                                    <span class="badge {% if attendance.status == 'present' %}bg-success{% elif attendance.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {% if attendance.status == 'present' %}Có Mặt
+                                        {% elif attendance.status == 'absent' %}Vắng Mặt
+                                        {% elif attendance.status == 'late' %}Đi Muộn
+                                        {% elif attendance.status == 'half_day' %}Nửa Ngày
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">Không có bản ghi chấm công nào hôm nay</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Thông Tin Nhân Viên</h5>
+                <p><strong>Mã NV:</strong> {{ employee.employee_id }}</p>
+                <p><strong>Họ Tên:</strong> {{ employee.user.get_full_name }}</p>
+                <p><strong>Phòng Ban:</strong> {{ employee.department.name }}</p>
+                <p><strong>Chức Vụ:</strong> {{ employee.position }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Lịch Sử Chấm Công Gần Đây</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Giờ Vào</th>
+                                <th>Giờ Ra</th>
+                                <th>Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance %}
+                            <tr>
+                                <td>{{ record.date }}</td>
+                                <td>{{ record.check_in|time }}</td>
+                                <td>{{ record.check_out|time|default:'-' }}</td>
+                                <td>
+                                    <span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {% if record.status == 'present' %}Có Mặt
+                                        {% elif record.status == 'absent' %}Vắng Mặt
+                                        {% elif record.status == 'late' %}Đi Muộn
+                                        {% elif record.status == 'half_day' %}Nửa Ngày
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">Không có bản ghi chấm công nào</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %} 

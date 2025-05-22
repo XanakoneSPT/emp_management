@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản Lý Chấm Công - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'employee:attendance_list' %}" class="btn btn-info">
+                <i class="fas fa-list me-1"></i> Danh Sách Chấm Công
+            </a>
+            <a href="{% url 'employee:auto_mark_attendance' %}" class="btn btn-primary">
+                <i class="fas fa-camera me-1"></i> Chấm Công Nhanh
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Employee Selection -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Chọn Nhân Viên</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-3">
+                    <div class="mb-3">
+                        <label for="department" class="form-label">Phòng Ban</label>
+                        <select name="department" id="department" class="form-select">
+                            <option value="">Tất Cả Phòng Ban</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_department == dept.id %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Tìm Kiếm Nhân Viên</label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Tên hoặc ID...">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Tìm Kiếm
+                    </button>
+                </form>
+
+                <div class="list-group">
+                    {% for emp in employees %}
+                    <a href="?employee_id={{ emp.id }}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                       class="list-group-item list-group-item-action {% if selected_employee.id == emp.id %}active{% endif %}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ emp.user.get_full_name }}</h6>
+                            <small>{{ emp.employee_id }}</small>
+                        </div>
+                        <small>{{ emp.department.name }} - {{ emp.position }}</small>
+                    </a>
+                    {% empty %}
+                    <div class="text-center p-3">
+                        <p class="text-muted">Không tìm thấy nhân viên</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Management -->
+    <div class="col-md-8">
+        {% if selected_employee %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quản Lý {{ selected_employee.user.get_full_name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-3">Đăng Ký Khuôn Mặt</h6>
+                                {% if selected_employee.face_image %}
+                                <img src="{{ selected_employee.face_image.url }}" alt="Ảnh Khuôn Mặt Hiện Tại" class="img-fluid mb-2 rounded">
+                                {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> Chưa đăng ký khuôn mặt
+                                </div>
+                                {% endif %}
+
+                                <!-- Camera Preview -->
+                                <div class="text-center mb-3">
+                                    <video id="video" width="100%" style="display: none;"></video>
+                                    <canvas id="canvas" style="display: none;"></canvas>
+                                    <img id="preview" class="img-fluid rounded mb-2" style="display: none;">
+                                </div>
+
+                                <form id="faceForm" method="post" enctype="multipart/form-data" action="{% url 'employee:admin_register_face' selected_employee.id %}">
+                                    {% csrf_token %}
+                                    <input type="file" id="face_image" name="face_image" accept="image/*" class="form-control" style="display: none;">
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button type="button" id="startCamera" class="btn btn-primary">
+                                            <i class="fas fa-camera"></i> Sử Dụng Camera
+                                        </button>
+                                        <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;" data-employee-id="{{ selected_employee.employee_id }}">
+                                            <i class="fas fa-camera-retro"></i> Chụp Ảnh
+                                        </button>
+                                        <button type="button" id="uploadButton" class="btn btn-info" onclick="document.getElementById('face_image').click()">
+                                            <i class="fas fa-upload"></i> Tải Ảnh Lên
+                                        </button>
+                                        <button type="submit" id="submitBtn" class="btn btn-primary" style="display: none;">
+                                            <i class="fas fa-save"></i> Lưu Khuôn Mặt
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-3">Chấm Công</h6>
+                                <form method="post" action="{% url 'employee:admin_mark_attendance' selected_employee.id %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="status" class="form-label">Trạng Thái</label>
+                                        <select name="status" id="status" class="form-select" required>
+                                            <option value="present">Có Mặt</option>
+                                            <option value="absent">Vắng Mặt</option>
+                                            <option value="late">Đi Muộn</option>
+                                            <option value="half_day">Nửa Ngày</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="check_in" class="form-label">Giờ Vào</label>
+                                        <input type="datetime-local" class="form-control" id="check_in" name="check_in">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="check_out" class="form-label">Giờ Ra</label>
+                                        <input type="datetime-local" class="form-control" id="check_out" name="check_out">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-clock"></i> Chấm Công
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Attendance -->
+                <h6 class="mt-4 mb-3">Chấm Công Hôm Nay</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Trạng Thái</th>
+                                <th>Giờ Vào</th>
+                                <th>Giờ Ra</th>
+                                <th>Giờ Làm</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if today_attendance %}
+                            <tr>
+                                <td>
+                                    <span class="badge {% if today_attendance.status == 'present' %}bg-success{% elif today_attendance.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {% if today_attendance.status == 'present' %}Có Mặt
+                                        {% elif today_attendance.status == 'absent' %}Vắng Mặt
+                                        {% elif today_attendance.status == 'late' %}Đi Muộn
+                                        {% elif today_attendance.status == 'half_day' %}Nửa Ngày
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ today_attendance.check_in|date:"g:i A"|default:"-" }}</td>
+                                <td>{{ today_attendance.check_out|date:"g:i A"|default:"-" }}</td>
+                                <td>{{ today_attendance.calculate_working_hours|floatformat:2 }} giờ</td>
+                                <td>
+                                    <form method="post" action="{% url 'employee:admin_delete_attendance' today_attendance.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa bản ghi chấm công này?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">Chưa có bản ghi chấm công nào hôm nay</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Vui lòng chọn nhân viên từ danh sách để quản lý chấm công và đăng ký khuôn mặt
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('department').addEventListener('change', function() {
+    this.form.submit();
+});
+
+// Face registration with camera
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let preview = document.getElementById('preview');
+let startButton = document.getElementById('startCamera');
+let captureButton = document.getElementById('capturePhoto');
+let submitBtn = document.getElementById('submitBtn');
+let stream = null;
+
+// Handle file upload
+document.getElementById('face_image').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            video.style.display = 'none';
+            captureButton.style.display = 'none';
+            submitBtn.style.display = 'block';
+        };
+        reader.readAsDataURL(this.files[0]);
+    }
+});
+
+// Start camera
+startButton.addEventListener('click', async () => {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        });
+        video.srcObject = stream;
+        video.style.display = 'block';
+        preview.style.display = 'none';
+        startButton.style.display = 'none';
+        captureButton.style.display = 'block';
+        video.play();
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        alert('Lỗi truy cập camera. Vui lòng đảm bảo bạn đã cấp quyền truy cập camera.');
+    }
+});
+
+// Capture photo
+captureButton.addEventListener('click', () => {
+    const employeeId = captureButton.getAttribute('data-employee-id');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    let image = canvas.toDataURL('image/jpeg');
+    preview.src = image;
+    preview.style.display = 'block';
+    video.style.display = 'none';
+    captureButton.style.display = 'none';
+    submitBtn.style.display = 'block';
+    
+    // Convert base64 to blob
+    fetch(image)
+        .then(res => res.blob())
+        .then(blob => {
+            // Use employee ID in the filename
+            const file = new File([blob], `${employeeId}.jpg`, { type: "image/jpeg" });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById('face_image').files = dataTransfer.files;
+        });
+    
+    // Stop the camera
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %} 
