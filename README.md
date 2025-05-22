@@ -34,7 +34,7 @@ Một hệ thống quản lý nhân viên toàn diện được xây dựng bằ
 
 1. Clone repository:
 ```bash
-git clone https://github.com/your-username/employee-management.git
+git clone https://github.com/XanakoneSPT/emp_management.git
 cd employee-management
 ```
 
@@ -107,9 +107,3 @@ Mọi đóng góp đều được hoan nghênh! Vui lòng:
 ## Giấy Phép
 
 Phân phối theo giấy phép MIT. Xem `LICENSE` để biết thêm thông tin.
-
-## Liên Hệ
-
-Your Name - email@example.com
-
-Project Link: https://github.com/your-username/employee-management 
