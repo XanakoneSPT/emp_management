@@ -59,7 +59,7 @@ class EmployeeForm(forms.ModelForm):
     face_image = forms.ImageField(
         required=False,
         label='Ảnh khuôn mặt',
-        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'style': 'display: none;'})
     )
 
     class Meta:
@@ -76,7 +76,7 @@ class EmployeeForm(forms.ModelForm):
             'base_salary': forms.NumberInput(attrs={'class': 'form-control'}),
             'hourly_rate': forms.NumberInput(attrs={'class': 'form-control'}),
             'overtime_rate': forms.NumberInput(attrs={'class': 'form-control'}),
-            'standard_work_hours': forms.NumberInput(attrs={'class': 'form-control'}),
+            'standard_work_hours': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '24'}),
         }
         labels = {
             'phone_number': 'Số điện thoại',
@@ -117,5 +117,12 @@ class EmployeeForm(forms.ModelForm):
         
         if username_exists.exists():
             raise forms.ValidationError("Tên đăng nhập đã tồn tại")
+
+        # Validate required fields for new employees
+        if not is_edit:
+            required_fields = ['phone_number', 'address', 'joining_date']
+            for field in required_fields:
+                if not cleaned_data.get(field):
+                    self.add_error(field, f"Trường này là bắt buộc")
 
         return cleaned_data 

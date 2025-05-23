@@ -2,6 +2,46 @@
 
 {% block title %}Thêm Nhân Viên - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
+{% block extra_css %}
+<style>
+.camera-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+#video {
+    width: 100%;
+    max-width: 640px;
+    background-color: #ddd;
+    border-radius: 8px;
+}
+
+#preview {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.camera-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-size: 1.2em;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
@@ -72,13 +112,6 @@
                         <div class="col-md-6 mb-3">
                             <h6 class="mb-3">Thông Tin Công Việc</h6>
                             <div class="mb-3">
-                                <label for="{{ form.employee_id.id_for_label }}" class="form-label">Mã nhân viên</label>
-                                {{ form.employee_id }}
-                                {% if form.employee_id.errors %}
-                                <div class="invalid-feedback d-block">{{ form.employee_id.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
                                 <label for="{{ form.department.id_for_label }}" class="form-label">Phòng ban</label>
                                 {{ form.department }}
                                 {% if form.department.errors %}
@@ -92,11 +125,18 @@
                                 <div class="invalid-feedback d-block">{{ form.position.errors }}</div>
                                 {% endif %}
                             </div>
+                            <div class="mb-3">
+                                <label for="{{ form.joining_date.id_for_label }}" class="form-label">Ngày vào làm</label>
+                                {{ form.joining_date }}
+                                {% if form.joining_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.joining_date.errors }}</div>
+                                {% endif %}
+                            </div>
                         </div>
                         
-                        <!-- Additional Information -->
+                        <!-- Contact Information -->
                         <div class="col-md-6 mb-3">
-                            <h6 class="mb-3">Thông Tin Bổ Sung</h6>
+                            <h6 class="mb-3">Thông Tin Liên Hệ</h6>
                             <div class="mb-3">
                                 <label for="{{ form.phone_number.id_for_label }}" class="form-label">Số điện thoại</label>
                                 {{ form.phone_number }}
@@ -105,24 +145,110 @@
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.joining_date.id_for_label }}" class="form-label">Ngày vào làm</label>
-                                {{ form.joining_date }}
-                                {% if form.joining_date.errors %}
-                                <div class="invalid-feedback d-block">{{ form.joining_date.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
-                                <label for="{{ form.face_image.id_for_label }}" class="form-label">Ảnh khuôn mặt</label>
-                                {{ form.face_image }}
-                                {% if form.face_image.errors %}
-                                <div class="invalid-feedback d-block">{{ form.face_image.errors }}</div>
+                                <label for="{{ form.address.id_for_label }}" class="form-label">Địa chỉ</label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                <div class="invalid-feedback d-block">{{ form.address.errors }}</div>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
-                    
+
+                    <!-- Salary Information -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="mb-3">Thông Tin Lương</h6>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.base_salary.id_for_label }}" class="form-label">Lương cơ bản</label>
+                                    {{ form.base_salary }}
+                                    {% if form.base_salary.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.base_salary.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.hourly_rate.id_for_label }}" class="form-label">Lương theo giờ</label>
+                                    {{ form.hourly_rate }}
+                                    {% if form.hourly_rate.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.hourly_rate.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.overtime_rate.id_for_label }}" class="form-label">Lương tăng ca</label>
+                                    {{ form.overtime_rate }}
+                                    {% if form.overtime_rate.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.overtime_rate.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.standard_work_hours.id_for_label }}" class="form-label">Số giờ làm tiêu chuẩn</label>
+                                    {{ form.standard_work_hours }}
+                                    {% if form.standard_work_hours.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.standard_work_hours.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Face Registration -->
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <h6 class="mb-3">Đăng Ký Khuôn Mặt</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <!-- Camera Preview -->
+                                    <div class="camera-container mb-3">
+                                        <video id="video" autoplay playsinline style="display: none;"></video>
+                                        <canvas id="canvas" style="display: none;"></canvas>
+                                        <img id="preview" style="display: none;">
+                                        <div id="camera-status" class="camera-overlay" style="display: none;">
+                                            <span>Đang khởi động camera...</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" id="startCamera" class="btn btn-primary">
+                                            <i class="fas fa-camera"></i> Sử Dụng Camera
+                                        </button>
+                                        <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;">
+                                            <i class="fas fa-camera-retro"></i> Chụp Ảnh
+                                        </button>
+                                        <button type="button" id="retakePhoto" class="btn btn-warning" style="display: none;">
+                                            <i class="fas fa-redo"></i> Chụp Lại
+                                        </button>
+                                        <button type="button" id="uploadButton" class="btn btn-info">
+                                            <i class="fas fa-upload"></i> Tải Ảnh Lên
+                                        </button>
+                                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Ảnh khuôn mặt</label>
+                                        {{ form.face_image }}
+                                        {% if form.face_image.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.face_image.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Vui lòng chụp ảnh hoặc tải lên ảnh khuôn mặt rõ ràng, nhìn thẳng vào camera.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>Vui lòng sửa các lỗi sau:</strong>
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
                     <div class="text-end">
-                        <a href="{% url 'employee:employee_list' %}" class="btn btn-secondary">Hủy</a>
+                        <a href="{% url 'employee:employee_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Hủy
+                        </a>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Lưu
                         </button>
@@ -136,74 +262,118 @@
 
 {% block extra_js %}
 <script>
-// Face registration with camera
-let video = document.getElementById('video');
-let canvas = document.getElementById('canvas');
-let preview = document.getElementById('preview');
-let startButton = document.getElementById('startCamera');
-let captureButton = document.getElementById('capturePhoto');
-let stream = null;
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const preview = document.getElementById('preview');
+    const startButton = document.getElementById('startCamera');
+    const captureButton = document.getElementById('capturePhoto');
+    const retakeButton = document.getElementById('retakePhoto');
+    const uploadButton = document.getElementById('uploadButton');
+    const fileInput = document.getElementById('fileInput');
+    const cameraStatus = document.getElementById('camera-status');
+    let stream = null;
 
-// Handle file upload
-document.getElementById('face_image').addEventListener('change', function(e) {
-    if (this.files && this.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-            video.style.display = 'none';
-            captureButton.style.display = 'none';
-        };
-        reader.readAsDataURL(this.files[0]);
-    }
-});
+    // File Upload Handler
+    uploadButton.addEventListener('click', () => {
+        fileInput.click();
+    });
 
-// Start camera
-startButton.addEventListener('click', async () => {
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 }
+    fileInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                video.style.display = 'none';
+                captureButton.style.display = 'none';
+                retakeButton.style.display = 'none';
+                startButton.style.display = 'block';
+                
+                // Copy to the hidden form input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(fileInput.files[0]);
+                document.getElementById('{{ form.face_image.auto_id }}').files = dataTransfer.files;
+            };
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    // Camera Handlers
+    async function startCamera() {
+        try {
+            cameraStatus.style.display = 'flex';
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
             }
-        });
-        video.srcObject = stream;
-        video.style.display = 'block';
-        preview.style.display = 'none';
-        startButton.style.display = 'none';
-        captureButton.style.display = 'block';
-        video.play();
-    } catch (err) {
-        console.error('Error accessing camera:', err);
-        alert('Error accessing camera. Please make sure you have granted camera permissions.');
+            
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                }
+            });
+            
+            video.srcObject = stream;
+            video.style.display = 'block';
+            preview.style.display = 'none';
+            startButton.style.display = 'none';
+            captureButton.style.display = 'block';
+            retakeButton.style.display = 'none';
+            cameraStatus.style.display = 'none';
+            
+            await video.play();
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            cameraStatus.style.display = 'none';
+            alert('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập camera của trình duyệt.');
+            startButton.style.display = 'block';
+        }
     }
-});
 
-// Capture photo
-captureButton.addEventListener('click', () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    let image = canvas.toDataURL('image/jpeg');
-    preview.src = image;
-    preview.style.display = 'block';
-    video.style.display = 'none';
-    captureButton.style.display = 'none';
-    
-    // Convert base64 to blob
-    fetch(image)
-        .then(res => res.blob())
-        .then(blob => {
-            const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            document.getElementById('face_image').files = dataTransfer.files;
-        });
-    
-    // Stop the camera
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-    }
+    startButton.addEventListener('click', startCamera);
+
+    retakeButton.addEventListener('click', async () => {
+        preview.style.display = 'none';
+        retakeButton.style.display = 'none';
+        await startCamera();
+    });
+
+    captureButton.addEventListener('click', () => {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const image = canvas.toDataURL('image/jpeg', 0.9);
+        preview.src = image;
+        preview.style.display = 'block';
+        video.style.display = 'none';
+        captureButton.style.display = 'none';
+        retakeButton.style.display = 'block';
+        
+        // Convert base64 to blob and create a File
+        fetch(image)
+            .then(res => res.blob())
+            .then(blob => {
+                const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('{{ form.face_image.auto_id }}').files = dataTransfer.files;
+            });
+        
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
 });
 </script>
 {% endblock %} 
