@@ -24,6 +24,27 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     
+                    <!-- Employee Status -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %} me-2">
+                                        <i class="fas {% if employee.is_active %}fa-check{% else %}fa-times{% endif %}"></i>
+                                    </span>
+                                    Trạng thái làm việc
+                                </label>
+                            </div>
+                            {% if not employee.is_active %}
+                            <div class="text-muted small mt-1">
+                                <i class="fas fa-info-circle"></i> 
+                                Nhân viên này hiện không còn làm việc. Họ sẽ không thể đăng nhập vào hệ thống.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
                     <div class="row">
                         <!-- User Account Information -->
                         <div class="col-md-6 mb-3">
@@ -130,30 +151,40 @@
                                     </div>
                                     {% endif %}
                                     <!-- Camera Preview -->
-                                    <div class="text-center mb-3">
-                                        <video id="video" width="100%" style="display: none;"></video>
+                                    <div class="camera-container mb-3">
+                                        <video id="video" autoplay playsinline style="display: none;"></video>
                                         <canvas id="canvas" style="display: none;"></canvas>
-                                        <img id="preview" class="img-fluid rounded mb-2" style="display: none;">
+                                        <img id="preview" style="display: none;">
+                                        <div id="camera-status" class="camera-overlay" style="display: none;">
+                                            <span>Đang khởi động camera...</span>
+                                        </div>
                                     </div>
                                     <div class="d-grid gap-2">
                                         <button type="button" id="startCamera" class="btn btn-primary">
                                             <i class="fas fa-camera"></i> Sử Dụng Camera
                                         </button>
-                                        <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;" data-employee-id="{{ employee.employee_id }}">
+                                        <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;">
                                             <i class="fas fa-camera-retro"></i> Chụp Ảnh
                                         </button>
-                                        <button type="button" id="uploadButton" class="btn btn-info" onclick="document.getElementById('face_image').click()">
+                                        <button type="button" id="retakePhoto" class="btn btn-warning" style="display: none;">
+                                            <i class="fas fa-redo"></i> Chụp Lại
+                                        </button>
+                                        <button type="button" id="uploadButton" class="btn btn-info">
                                             <i class="fas fa-upload"></i> Tải Ảnh Lên
                                         </button>
+                                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="{{ form.face_image.id_for_label }}" class="form-label">Ảnh Khuôn Mặt Mới</label>
-                                        <input type="file" id="face_image" name="face_image" accept="image/*" class="form-control" style="display: none;">
+                                        <label class="form-label">Ảnh khuôn mặt mới</label>
+                                        {{ form.face_image }}
                                         {% if form.face_image.errors %}
                                         <div class="invalid-feedback d-block">{{ form.face_image.errors }}</div>
                                         {% endif %}
+                                        <div class="form-text">
+                                            Vui lòng chụp ảnh hoặc tải lên ảnh khuôn mặt rõ ràng, nhìn thẳng vào camera.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -238,7 +269,6 @@
     </div>
 </div>
 {% endblock %}
-
 {% block extra_js %}
 <script>
 // Face registration with camera
@@ -250,7 +280,7 @@ let captureButton = document.getElementById('capturePhoto');
 let stream = null;
 
 // Handle file upload
-document.getElementById('face_image').addEventListener('change', function(e) {
+document.getElementById('fileInput').addEventListener('change', function(e) {
     if (this.files && this.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -304,7 +334,7 @@ captureButton.addEventListener('click', () => {
             const file = new File([blob], `${employeeId}.jpg`, { type: "image/jpeg" });
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
-            document.getElementById('face_image').files = dataTransfer.files;
+            document.getElementById('fileInput').files = dataTransfer.files;
         });
     
     // Stop the camera

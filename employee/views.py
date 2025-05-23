@@ -391,75 +391,55 @@ def add_employee(request):
 @staff_member_required
 def edit_employee(request, employee_id):
     employee = get_object_or_404(Employee, id=employee_id)
-    
+    user = employee.user
+
     if request.method == 'POST':
         form = EmployeeForm(request.POST, request.FILES, instance=employee)
         if form.is_valid():
-            try:
-                with transaction.atomic():
-                    # Update User model fields
-                    user = employee.user
-                    user.first_name = form.cleaned_data['first_name']
-                    user.last_name = form.cleaned_data['last_name']
-                    user.email = form.cleaned_data['email']
-                    user.username = form.cleaned_data['username']
-                    
-                    # Only update password if provided
-                    password = form.cleaned_data.get('password')
-                    if password:
-                        user.set_password(password)
-                    
-                    user.save()
-                    
-                    # Save employee data first without committing
-                    employee = form.save(commit=False)
-                    
-                    # Handle face image
-                    if 'face_image' in request.FILES:
-                        # Store the new image temporarily
-                        new_image = request.FILES['face_image']
-                        
-                        # Delete old face image if it exists
-                        if employee.face_image:
-                            # Store the path to the old image
-                            old_image_path = employee.face_image.path if employee.face_image else None
-                            # Clear the image field
-                            employee.face_image = None
-                            # Save to ensure the old image is unlinked
-                            employee.save()
-                            # Delete the old image file if it exists
-                            if old_image_path and os.path.exists(old_image_path):
-                                os.remove(old_image_path)
-                        
-                        # Now set the new image
-                        employee.face_image = new_image
-                    
-                    # Save employee data
-                    employee.save()
-                    
-                    messages.success(request, 'Employee information updated successfully!')
-                    return redirect('employee:employee_list')
-            except Exception as e:
-                messages.error(request, f'Error updating employee: {str(e)}')
+            # Update user information
+            user.username = form.cleaned_data['username']
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.email = form.cleaned_data['email']
+            user.is_active = form.cleaned_data['is_active']  # Update user active status
+            
+            # Update password if provided
+            if form.cleaned_data['password']:
+                if form.cleaned_data['password'] == form.cleaned_data['confirm_password']:
+                    user.set_password(form.cleaned_data['password'])
+                else:
+                    form.add_error('confirm_password', 'Mật khẩu xác nhận không khớp')
+                    return render(request, 'employee/edit_employee.html', {'form': form, 'employee': employee})
+            
+            user.save()
+            employee = form.save()
+
+            # Handle face image update
+            if 'face_image' in request.FILES:
+                employee.face_image = request.FILES['face_image']
+                employee.save()
+                # Regenerate face encoding
+                try:
+                    employee.generate_face_encoding()
+                except Exception as e:
+                    messages.error(request, f'Không thể tạo dữ liệu khuôn mặt: {str(e)}')
+
+            messages.success(request, 'Cập nhật thông tin nhân viên thành công')
+            return redirect('employee:employee_list')
     else:
-        # Pre-populate the form with existing data
         initial_data = {
-            'first_name': employee.user.first_name,
-            'last_name': employee.user.last_name,
-            'email': employee.user.email,
-            'username': employee.user.username,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'is_active': user.is_active,  # Initialize form with current active status
         }
         form = EmployeeForm(instance=employee, initial=initial_data)
-        # Remove password requirement for editing
-        form.fields['password'].required = False
-        form.fields['confirm_password'].required = False
-    
-    context = {
+
+    return render(request, 'employee/edit_employee.html', {
         'form': form,
-        'employee': employee,
-        'is_edit': True
-    }
-    return render(request, 'employee/edit_employee.html', context)
+        'employee': employee
+    })
 
 @staff_member_required
 def manage_attendance(request):

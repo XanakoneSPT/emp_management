@@ -62,12 +62,20 @@ class EmployeeForm(forms.ModelForm):
         widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'style': 'display: none;'})
     )
 
+    # Employee status field
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='Đang làm việc',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
     class Meta:
         model = Employee
         fields = [
             'department', 'position', 'phone_number',
             'address', 'joining_date', 'base_salary', 'hourly_rate',
-            'overtime_rate', 'standard_work_hours', 'face_image'
+            'overtime_rate', 'standard_work_hours', 'face_image', 'is_active'
         ]
         widgets = {
             'joining_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -86,6 +94,7 @@ class EmployeeForm(forms.ModelForm):
             'hourly_rate': 'Lương theo giờ',
             'overtime_rate': 'Lương tăng ca',
             'standard_work_hours': 'Số giờ làm tiêu chuẩn',
+            'is_active': 'Đang làm việc'
         }
 
     def clean(self):
