@@ -16,12 +16,15 @@ from .forms import EmployeeForm
 from django.contrib.auth.models import User
 from django.db.models import Q
 import os
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils.timezone import localtime
 from PIL import Image
 import io
 import logging
 import traceback
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
+from django.db.models import Sum, Avg
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -950,3 +953,181 @@ def attendance_list(request):
         ]
     }
     return render(request, 'employee/attendance_list.html', context)
+
+@staff_member_required
+def export_employee_list(request):
+    """Export employee list to Excel"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Employee List"
+
+    # Define headers
+    headers = ['Employee ID', 'Full Name', 'Department', 'Position', 'Email', 'Phone', 'Join Date', 'Status']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+
+    # Add data
+    employees = Employee.objects.select_related('user', 'department').all()
+    for row, employee in enumerate(employees, 2):
+        ws.cell(row=row, column=1, value=employee.employee_id)
+        ws.cell(row=row, column=2, value=employee.user.get_full_name())
+        ws.cell(row=row, column=3, value=employee.department.name if employee.department else '')
+        ws.cell(row=row, column=4, value=employee.position)
+        ws.cell(row=row, column=5, value=employee.user.email)
+        ws.cell(row=row, column=6, value=employee.phone_number)
+        ws.cell(row=row, column=7, value=employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else '')
+        ws.cell(row=row, column=8, value='Active' if employee.is_active else 'Inactive')
+
+    # Adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column[0].column_letter].width = adjusted_width
+
+    # Create response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=employee_list.xlsx'
+    wb.save(response)
+    return response
+
+@staff_member_required
+def export_attendance_list(request):
+    """Export attendance list to Excel"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attendance List"
+
+    # Define headers
+    headers = ['Date', 'Employee ID', 'Employee Name', 'Department', 'Check In', 'Check Out', 'Status', 'Working Hours']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+
+    # Get filter parameters
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    department_id = request.GET.get('department')
+    
+    # Query attendance records
+    attendance_records = Attendance.objects.select_related('employee', 'employee__user', 'employee__department').all()
+    
+    if start_date:
+        attendance_records = attendance_records.filter(date__gte=start_date)
+    if end_date:
+        attendance_records = attendance_records.filter(date__lte=end_date)
+    if department_id:
+        attendance_records = attendance_records.filter(employee__department_id=department_id)
+
+    # Add data
+    for row, record in enumerate(attendance_records, 2):
+        ws.cell(row=row, column=1, value=record.date.strftime('%Y-%m-%d'))
+        ws.cell(row=row, column=2, value=record.employee.employee_id)
+        ws.cell(row=row, column=3, value=record.employee.user.get_full_name())
+        ws.cell(row=row, column=4, value=record.employee.department.name if record.employee.department else '')
+        ws.cell(row=row, column=5, value=record.check_in.strftime('%H:%M:%S') if record.check_in else '')
+        ws.cell(row=row, column=6, value=record.check_out.strftime('%H:%M:%S') if record.check_out else '')
+        ws.cell(row=row, column=7, value=record.status.title())
+        ws.cell(row=row, column=8, value=round(record.calculate_working_hours(), 2) if record.check_in and record.check_out else 0)
+
+    # Adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column[0].column_letter].width = adjusted_width
+
+    # Create response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=attendance_list.xlsx'
+    wb.save(response)
+    return response
+
+@staff_member_required
+def export_salary_list(request):
+    """Export salary list to Excel"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Salary List"
+
+    # Define headers
+    headers = ['Month', 'Employee ID', 'Employee Name', 'Department', 'Base Pay', 'Regular Hours Pay', 
+              'Overtime Pay', 'Total Salary', 'Total Days', 'Working Hours', 'Overtime Hours']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+
+    # Get filter parameters
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+    department_id = request.GET.get('department')
+    
+    # Query salary records
+    salary_records = Salary.objects.select_related('employee', 'employee__user', 'employee__department').all()
+    
+    if month and year:
+        salary_records = salary_records.filter(month=month, year=year)
+    if department_id:
+        salary_records = salary_records.filter(employee__department_id=department_id)
+
+    # Add data
+    for row, record in enumerate(salary_records, 2):
+        ws.cell(row=row, column=1, value=f"{record.year}-{record.month:02d}")
+        ws.cell(row=row, column=2, value=record.employee.employee_id)
+        ws.cell(row=row, column=3, value=record.employee.user.get_full_name())
+        ws.cell(row=row, column=4, value=record.employee.department.name if record.employee.department else '')
+        ws.cell(row=row, column=5, value=float(record.base_pay))
+        ws.cell(row=row, column=6, value=float(record.regular_hours_pay))
+        ws.cell(row=row, column=7, value=float(record.overtime_pay))
+        ws.cell(row=row, column=8, value=float(record.total_salary))
+        ws.cell(row=row, column=9, value=record.total_days)
+        ws.cell(row=row, column=10, value=float(record.total_working_hours))
+        ws.cell(row=row, column=11, value=float(record.overtime_hours))
+
+    # Add summary row
+    summary_row = ws.max_row + 2
+    ws.cell(row=summary_row, column=1, value="Total").font = Font(bold=True)
+    for col in range(5, 9):  # Columns E to H (5 to 8) - monetary values
+        column_letter = ws.cell(row=1, column=col).column_letter
+        ws.cell(row=summary_row, column=col, value=f"=SUM({column_letter}2:{column_letter}{ws.max_row-2})").font = Font(bold=True)
+
+    # Adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column[0].column_letter].width = adjusted_width
+
+    # Create response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=salary_list.xlsx'
+    wb.save(response)
+    return response
