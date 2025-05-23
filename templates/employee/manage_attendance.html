@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Quản Lý Chấm Công - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
@@ -173,8 +174,8 @@
                                         {% endif %}
                                     </span>
                                 </td>
-                                <td>{{ today_attendance.check_in|date:"g:i A"|default:"-" }}</td>
-                                <td>{{ today_attendance.check_out|date:"g:i A"|default:"-" }}</td>
+                                <td>{{ today_attendance.check_in|localize_datetime }}</td>
+                                <td>{{ today_attendance.check_out|localize_datetime }}</td>
                                 <td>{{ today_attendance.calculate_working_hours|floatformat:2 }} giờ</td>
                                 <td>
                                     <form method="post" action="{% url 'employee:admin_delete_attendance' today_attendance.id %}" class="d-inline">
