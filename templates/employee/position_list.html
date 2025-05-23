@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản Lý Chức Vụ - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="h3 mb-0">Quản Lý Chức Vụ</h2>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updatePositionModal">
+                <i class="fas fa-edit me-2"></i>Cập Nhật Chức Vụ
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Chức Vụ</th>
+                            <th>Số Nhân Viên</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for position in positions %}
+                        <tr>
+                            <td>{{ position.position }}</td>
+                            <td>{{ position.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center">Chưa có chức vụ nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Position Modal -->
+<div class="modal fade" id="updatePositionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cập Nhật Chức Vụ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="old_position" class="form-label">Chức Vụ Cũ</label>
+                        <select class="form-select" id="old_position" name="old_position" required>
+                            <option value="">Chọn chức vụ cần thay đổi</option>
+                            {% for position in positions %}
+                            <option value="{{ position.position }}">{{ position.position }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_position" class="form-label">Chức Vụ Mới</label>
+                        <input type="text" class="form-control" id="new_position" name="new_position" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Cập Nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

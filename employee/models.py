@@ -165,3 +165,32 @@ class Salary(models.Model):
 
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.month}/{self.year}"
+
+class Feedback(models.Model):
+    FEEDBACK_TYPES = [
+        ('suggestion', 'Đề Xuất Cải Thiện'),
+        ('issue', 'Báo Cáo Vấn Đề'),
+        ('complaint', 'Khiếu Nại'),
+        ('other', 'Khác'),
+    ]
+    
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='feedbacks')
+    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPES)
+    content = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_notes = models.TextField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"{self.employee.user.get_full_name()} - {self.get_feedback_type_display()} - {self.submitted_at.strftime('%Y-%m-%d %H:%M')}"
+    
+    def resolve(self, notes=None):
+        self.is_resolved = True
+        self.resolved_at = timezone.now()
+        if notes:
+            self.resolution_notes = notes
+        self.save()

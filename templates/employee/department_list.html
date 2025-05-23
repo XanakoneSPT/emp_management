@@ -1,42 +1,144 @@
 {% extends 'base.html' %}
 
-{% block title %}Danh Sách Phòng Ban - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+{% block title %}Quản Lý Phòng Ban - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Danh Sách Phòng Ban</h5>
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="h3 mb-0">Quản Lý Phòng Ban</h2>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDepartmentModal">
+                <i class="fas fa-plus me-2"></i>Thêm Phòng Ban
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Tên Phòng Ban</th>
+                            <th>Mô Tả</th>
+                            <th>Số Nhân Viên</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for department in departments %}
+                        <tr>
+                            <td>{{ department.name }}</td>
+                            <td>{{ department.description|default:'' }}</td>
+                            <td>{{ department.employee_count }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editDepartmentModal{{ department.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDepartmentModal{{ department.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Edit Department Modal -->
+                        <div class="modal fade" id="editDepartmentModal{{ department.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Chỉnh Sửa Phòng Ban</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form method="post" action="{% url 'employee:edit_department' department.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="editName{{ department.id }}" class="form-label">Tên Phòng Ban</label>
+                                                <input type="text" class="form-control" id="editName{{ department.id }}" name="name" value="{{ department.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="editDescription{{ department.id }}" class="form-label">Mô Tả</label>
+                                                <textarea class="form-control" id="editDescription{{ department.id }}" name="description" rows="3">{{ department.description }}</textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                            <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delete Department Modal -->
+                        <div class="modal fade" id="deleteDepartmentModal{{ department.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Xác Nhận Xóa</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Bạn có chắc chắn muốn xóa phòng ban "{{ department.name }}"?</p>
+                                        {% if department.employee_count > 0 %}
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Phòng ban này hiện có {{ department.employee_count }} nhân viên. Bạn cần chuyển họ sang phòng ban khác trước khi xóa.
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                        <form method="post" action="{% url 'employee:delete_department' department.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger" {% if department.employee_count > 0 %}disabled{% endif %}>
+                                                Xác Nhận Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">Chưa có phòng ban nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Tên Phòng Ban</th>
-                                <th>Mô Tả</th>
-                                <th>Số Nhân Viên</th>
-                                <th>Ngày Tạo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for department in departments %}
-                            <tr>
-                                <td>{{ department.name }}</td>
-                                <td>{{ department.description|default:"-" }}</td>
-                                <td>{{ department.employee_count }}</td>
-                                <td>{{ department.created_at|date:"d/m/Y" }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">Không có phòng ban nào</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Department Modal -->
+<div class="modal fade" id="addDepartmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm Phòng Ban Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Tên Phòng Ban</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Mô Tả</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
                 </div>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Thêm Phòng Ban</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

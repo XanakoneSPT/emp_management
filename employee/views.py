@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from .models import Employee, Attendance, Department, Salary
+from .models import Employee, Attendance, Department, Salary, Feedback
 import face_recognition
 import numpy as np
 import cv2
@@ -14,7 +14,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.paginator import Paginator
 from .forms import EmployeeForm
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Q, Sum, Avg
 import os
 from django.http import JsonResponse, HttpResponse
 from django.utils.timezone import localtime
@@ -24,7 +24,6 @@ import logging
 import traceback
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
-from django.db.models import Sum, Avg
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -60,9 +59,9 @@ def employee_list(request):
     
     if search_query:
         employees = employees.filter(
-            models.Q(user__first_name__icontains=search_query) |
-            models.Q(user__last_name__icontains=search_query) |
-            models.Q(employee_id__icontains=search_query)
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(employee_id__icontains=search_query)
         )
     
     if department_id:
@@ -111,8 +110,14 @@ def dashboard(request):
             employee=employee
         ).order_by('-date')[:10]
         
+        # Get today's attendance
+        today = timezone.localdate()
+        today_attendance = Attendance.objects.filter(
+            employee=employee,
+            date=today
+        ).first()
+        
         # Calculate monthly statistics
-        today = date.today()
         first_day = today.replace(day=1)
         if today.month == 12:
             next_month = today.replace(year=today.year + 1, month=1, day=1)
@@ -148,7 +153,8 @@ def dashboard(request):
         return render(request, 'employee/employee_dashboard.html', {
             'employee': employee,
             'attendance': attendance,
-            'monthly_stats': monthly_stats
+            'monthly_stats': monthly_stats,
+            'today_attendance': today_attendance
         })
 
 @login_required
@@ -559,7 +565,11 @@ def admin_delete_attendance(request, attendance_id):
 @login_required
 def auto_mark_attendance(request):
     """View for the automatic face recognition attendance page"""
-    return render(request, 'employee/auto_mark_attendance.html')
+    context = {}
+    if request.user.is_staff:
+        # For admin users, provide list of all active employees
+        context['employees'] = Employee.objects.filter(is_active=True).order_by('user__first_name', 'user__last_name')
+    return render(request, 'employee/auto_mark_attendance.html', context)
 
 def optimize_image(image_file, max_size=(640, 480)):
     """Optimize image size and quality for faster processing"""
@@ -688,122 +698,102 @@ def process_auto_attendance(request):
                     'message': 'Error processing face features. Please try again with a clearer photo.',
                     'error_type': 'encoding_error'
                 })
-            
-            # Get ALL employees with registered faces
-            logger.info("Step 5: Getting all registered employees")
-            employees = Employee.objects.exclude(face_encoding__isnull=True)
-            
-            logger.info(f"Found {employees.count()} registered employees")
-            
-            if not employees.exists():
-                logger.warning("No registered employees found in the database")
-                return JsonResponse({
-                    'success': False,
-                    'message': 'No registered employees found in the system. Please register employee faces first.',
-                    'error_type': 'no_registered_employees'
-                })
-            
-            # Compare against ALL registered faces
-            try:
-                logger.info("Step 6: Preparing face comparison with all registered employees")
+
+            # For regular users, verify their own face
+            if not request.user.is_staff:
+                current_employee = get_object_or_404(Employee, user=request.user)
+                if not current_employee.face_encoding:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'No registered face found for your account. Please contact administrator.',
+                        'error_type': 'no_registered_face'
+                    })
+                
+                # Compare with the employee's face encoding
+                stored_encoding = np.frombuffer(current_employee.face_encoding)
+                matches = face_recognition.compare_faces([stored_encoding], face_encoding)
+                face_distances = face_recognition.face_distance([stored_encoding], face_encoding)
+                
+                if not matches[0]:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Face does not match your registered face. Please ensure you are using your own account.',
+                        'error_type': 'face_mismatch'
+                    })
+                
+                confidence = (1 - face_distances[0]) * 100
+                if confidence < 60:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Face verification confidence too low. Please try again with better lighting.',
+                        'error_type': 'low_confidence'
+                    })
+            else:
+                # For admin users, find the best matching face from all employees
+                employees = Employee.objects.exclude(face_encoding__isnull=True)
                 known_face_encodings = []
                 known_employees = []
                 
-                # Load all employee face encodings
                 for employee in employees:
-                    try:
-                        encoding = get_face_encoding(employee.id, employee.face_encoding)
-                        known_face_encodings.append(encoding)
+                    if employee.face_encoding:
+                        known_face_encodings.append(np.frombuffer(employee.face_encoding))
                         known_employees.append(employee)
-                        logger.info(f"Loaded encoding for employee {employee.employee_id}")
-                    except Exception as e:
-                        logger.error(f"Error loading face encoding for employee {employee.id}: {str(e)}")
-                        continue
                 
                 if not known_face_encodings:
-                    logger.error("No valid face encodings loaded")
                     return JsonResponse({
                         'success': False,
-                        'message': 'Error loading registered face data. Please contact administrator.',
-                        'error_type': 'encoding_load_error'
+                        'message': 'No registered faces found in the system.',
+                        'error_type': 'no_registered_faces'
                     })
                 
-                # Compare the captured face with ALL registered faces
-                logger.info("Step 7: Comparing captured face with all registered faces")
+                # Find the best match
                 face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-                best_match_idx = np.argmin(face_distances)
-                best_match_distance = face_distances[best_match_idx]
+                best_match_index = np.argmin(face_distances)
+                confidence = (1 - face_distances[best_match_index]) * 100
                 
-                logger.info(f"Best match distance: {best_match_distance}")
-                logger.info(f"All face distances: {face_distances}")
-                
-                # If we find a good match (confidence threshold of 0.6)
-                if best_match_distance < 0.6:
-                    matched_employee = known_employees[best_match_idx]
-                    confidence = (1 - best_match_distance) * 100
-                    logger.info(f"Match found! Employee: {matched_employee.employee_id}, Confidence: {confidence:.2f}%")
-                    
-                    # Mark attendance for the matched employee
-                    today = date.today()
-                    try:
-                        attendance, created = Attendance.objects.get_or_create(
-                            employee=matched_employee,
-                            date=today,
-                            defaults={
-                                'status': 'present',
-                                'check_in': timezone.now(),
-                                'face_confidence': confidence
-                            }
-                        )
-                        
-                        current_time = localtime()
-                        
-                        if not created:
-                            if not attendance.check_out:
-                                attendance.check_out = current_time
-                                attendance.save()
-                                status = "Checked Out"
-                            else:
-                                status = "Already Checked Out"
-                        else:
-                            status = "Checked In"
-                        
-                        logger.info(f"Successfully processed attendance for employee {matched_employee.id}")
-                        
-                        return JsonResponse({
-                            'success': True,
-                            'message': f'Successfully recognized {matched_employee.user.get_full_name()}!',
-                            'employee_name': matched_employee.user.get_full_name(),
-                            'employee_id': matched_employee.employee_id,
-                            'department': matched_employee.department.name,
-                            'attendance_status': status,
-                            'timestamp': current_time.strftime('%I:%M %p'),
-                            'confidence': f'{confidence:.2f}%'
-                        })
-                    except Exception as e:
-                        logger.error(f"Database error while marking attendance: {str(e)}")
-                        logger.error(traceback.format_exc())
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'Error recording attendance. Please try again.',
-                            'error_type': 'database_error'
-                        })
-                
-                logger.warning(f"No match found with sufficient confidence (best match distance: {best_match_distance})")
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Face not recognized. Please ensure you are a registered employee and try again.',
-                    'error_type': 'no_match'
-                })
-                
-            except Exception as e:
-                logger.error(f"Face comparison error: {str(e)}")
-                logger.error(traceback.format_exc())
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Error comparing faces. Please try again.',
-                    'error_type': 'comparison_error'
-                })
+                if confidence >= 60:
+                    current_employee = known_employees[best_match_index]
+                else:
+                    # For admin, allow marking attendance even with low confidence
+                    current_employee = known_employees[best_match_index]
+                    logger.warning(f"Low confidence match ({confidence:.2f}%) for employee {current_employee.employee_id}")
+            
+            # Process attendance
+            today = date.today()
+            attendance, created = Attendance.objects.get_or_create(
+                employee=current_employee,
+                date=today,
+                defaults={
+                    'status': 'present',
+                    'check_in': timezone.now(),
+                    'face_confidence': confidence
+                }
+            )
+            
+            current_time = localtime()
+            
+            if not created:
+                if not attendance.check_out:
+                    attendance.check_out = current_time
+                    attendance.save()
+                    status = "Checked Out"
+                else:
+                    status = "Already Checked Out"
+            else:
+                status = "Checked In"
+            
+            logger.info(f"Successfully processed attendance for employee {current_employee.id}")
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Successfully recognized {current_employee.user.get_full_name()}!',
+                'employee_name': current_employee.user.get_full_name(),
+                'employee_id': current_employee.employee_id,
+                'department': current_employee.department.name,
+                'attendance_status': status,
+                'timestamp': current_time.strftime('%I:%M %p'),
+                'confidence': f'{confidence:.2f}%'
+            })
                 
         except Exception as e:
             logger.error(f"Unexpected error in face recognition process: {str(e)}")
@@ -884,10 +874,80 @@ def department_list(request):
     for department in departments:
         department.employee_count = Employee.objects.filter(department=department, is_active=True).count()
     
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add':
+            name = request.POST.get('name')
+            description = request.POST.get('description')
+            if name:
+                Department.objects.create(name=name, description=description)
+                messages.success(request, 'Phòng ban mới đã được tạo thành công!')
+            else:
+                messages.error(request, 'Vui lòng nhập tên phòng ban!')
+    
     context = {
         'departments': departments,
     }
     return render(request, 'employee/department_list.html', context)
+
+@staff_member_required
+def edit_department(request, department_id):
+    department = get_object_or_404(Department, id=department_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        
+        if name:
+            department.name = name
+            department.description = description
+            department.save()
+            messages.success(request, 'Phòng ban đã được cập nhật thành công!')
+        else:
+            messages.error(request, 'Vui lòng nhập tên phòng ban!')
+        
+        return redirect('employee:department_list')
+    
+    context = {
+        'department': department
+    }
+    return render(request, 'employee/edit_department.html', context)
+
+@staff_member_required
+def delete_department(request, department_id):
+    department = get_object_or_404(Department, id=department_id)
+    
+    # Check if department has employees
+    if Employee.objects.filter(department=department).exists():
+        messages.error(request, 'Không thể xóa phòng ban đang có nhân viên!')
+    else:
+        department.delete()
+        messages.success(request, 'Phòng ban đã được xóa thành công!')
+    
+    return redirect('employee:department_list')
+
+@staff_member_required
+def position_list(request):
+    """View for managing positions"""
+    # Get all unique positions from employees
+    positions = Employee.objects.values('position').distinct().order_by('position')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'update':
+            old_position = request.POST.get('old_position')
+            new_position = request.POST.get('new_position')
+            
+            if old_position and new_position:
+                Employee.objects.filter(position=old_position).update(position=new_position)
+                messages.success(request, 'Chức vụ đã được cập nhật thành công!')
+            else:
+                messages.error(request, 'Vui lòng nhập đầy đủ thông tin!')
+    
+    context = {
+        'positions': positions,
+    }
+    return render(request, 'employee/position_list.html', context)
 
 @staff_member_required
 def attendance_list(request):
@@ -1129,5 +1189,224 @@ def export_salary_list(request):
     # Create response
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=salary_list.xlsx'
+    wb.save(response)
+    return response
+
+@login_required
+def check_in(request):
+    if request.method == 'POST':
+        employee = get_object_or_404(Employee, user=request.user)
+        today = timezone.localdate()
+        
+        # Check if attendance already exists
+        attendance, created = Attendance.objects.get_or_create(
+            employee=employee,
+            date=today,
+            defaults={
+                'status': 'present',
+                'check_in': timezone.now()
+            }
+        )
+        
+        if created:
+            messages.success(request, 'Chấm công vào thành công!')
+        else:
+            if attendance.check_in:
+                messages.info(request, 'Bạn đã chấm công vào hôm nay rồi!')
+            else:
+                attendance.check_in = timezone.now()
+                attendance.status = 'present'
+                attendance.save()
+                messages.success(request, 'Chấm công vào thành công!')
+                
+    return redirect('employee:dashboard')
+
+@login_required
+def check_out(request):
+    if request.method == 'POST':
+        employee = get_object_or_404(Employee, user=request.user)
+        today = timezone.localdate()
+        
+        try:
+            attendance = Attendance.objects.get(
+                employee=employee,
+                date=today
+            )
+            
+            if attendance.check_out:
+                messages.info(request, 'Bạn đã chấm công ra hôm nay rồi!')
+            elif not attendance.check_in:
+                messages.error(request, 'Bạn chưa chấm công vào!')
+            else:
+                attendance.check_out = timezone.now()
+                attendance.save()
+                messages.success(request, 'Chấm công ra thành công!')
+        except Attendance.DoesNotExist:
+            messages.error(request, 'Không tìm thấy bản ghi chấm công cho hôm nay!')
+            
+    return redirect('employee:dashboard')
+
+@login_required
+def submit_feedback(request):
+    if request.method == 'POST':
+        employee = get_object_or_404(Employee, user=request.user)
+        feedback_type = request.POST.get('feedback_type')
+        content = request.POST.get('content')
+        
+        if feedback_type and content:
+            Feedback.objects.create(
+                employee=employee,
+                feedback_type=feedback_type,
+                content=content,
+                submitted_at=timezone.now()
+            )
+            messages.success(request, 'Cảm ơn bạn đã gửi phản hồi!')
+        else:
+            messages.error(request, 'Vui lòng điền đầy đủ thông tin!')
+            
+    return redirect('employee:dashboard')
+
+@staff_member_required
+def feedback_list(request):
+    # Get filter parameters
+    department_id = request.GET.get('department', '')
+    feedback_type = request.GET.get('feedback_type', '')
+    status = request.GET.get('status', '')
+    search_query = request.GET.get('search', '')
+    
+    # Base queryset
+    feedbacks = Feedback.objects.select_related('employee', 'employee__user', 'employee__department').all()
+    
+    # Apply filters
+    if department_id:
+        feedbacks = feedbacks.filter(employee__department_id=department_id)
+    
+    if feedback_type:
+        feedbacks = feedbacks.filter(feedback_type=feedback_type)
+    
+    if status:
+        if status == 'resolved':
+            feedbacks = feedbacks.filter(is_resolved=True)
+        elif status == 'unresolved':
+            feedbacks = feedbacks.filter(is_resolved=False)
+    
+    if search_query:
+        feedbacks = feedbacks.filter(
+            Q(employee__user__first_name__icontains=search_query) |
+            Q(employee__user__last_name__icontains=search_query) |
+            Q(employee__employee_id__icontains=search_query)
+        )
+    
+    # Order by submission time (newest first)
+    feedbacks = feedbacks.order_by('-submitted_at')
+    
+    # Pagination
+    paginator = Paginator(feedbacks, 10)  # Show 10 feedbacks per page
+    page_number = request.GET.get('page')
+    feedbacks_page = paginator.get_page(page_number)
+    
+    # Get departments for filter
+    departments = Department.objects.all()
+    
+    context = {
+        'feedbacks': feedbacks_page,
+        'departments': departments,
+        'selected_department': department_id,
+        'selected_type': feedback_type,
+        'selected_status': status,
+        'search_query': search_query,
+        'feedback_types': Feedback.FEEDBACK_TYPES
+    }
+    
+    return render(request, 'employee/feedback_list.html', context)
+
+@staff_member_required
+def resolve_feedback(request, feedback_id):
+    feedback = get_object_or_404(Feedback, id=feedback_id)
+    
+    if request.method == 'POST':
+        resolution_notes = request.POST.get('resolution_notes')
+        if resolution_notes:
+            feedback.resolve(notes=resolution_notes)
+            messages.success(request, 'Phản hồi đã được xử lý thành công!')
+        else:
+            messages.error(request, 'Vui lòng nhập ghi chú xử lý!')
+    
+    return redirect('employee:feedback_list')
+
+@staff_member_required
+def export_feedback_list(request):
+    """Export feedback list to Excel"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Danh Sách Phản Hồi"
+
+    # Define headers
+    headers = [
+        'Thời Gian', 'Mã NV', 'Họ Tên', 'Phòng Ban', 
+        'Loại Phản Hồi', 'Nội Dung', 'Trạng Thái', 
+        'Thời Gian Xử Lý', 'Ghi Chú Xử Lý'
+    ]
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+
+    # Get filter parameters
+    department_id = request.GET.get('department')
+    feedback_type = request.GET.get('feedback_type')
+    status = request.GET.get('status')
+    search_query = request.GET.get('search')
+    
+    # Query feedback records
+    feedbacks = Feedback.objects.select_related('employee', 'employee__user', 'employee__department').all()
+    
+    if department_id:
+        feedbacks = feedbacks.filter(employee__department_id=department_id)
+    if feedback_type:
+        feedbacks = feedbacks.filter(feedback_type=feedback_type)
+    if status:
+        if status == 'resolved':
+            feedbacks = feedbacks.filter(is_resolved=True)
+        elif status == 'unresolved':
+            feedbacks = feedbacks.filter(is_resolved=False)
+    if search_query:
+        feedbacks = feedbacks.filter(
+            Q(employee__user__first_name__icontains=search_query) |
+            Q(employee__user__last_name__icontains=search_query) |
+            Q(employee__employee_id__icontains=search_query)
+        )
+
+    # Add data
+    for row, feedback in enumerate(feedbacks, 2):
+        ws.cell(row=row, column=1, value=feedback.submitted_at.strftime('%d/%m/%Y %H:%M'))
+        ws.cell(row=row, column=2, value=feedback.employee.employee_id)
+        ws.cell(row=row, column=3, value=feedback.employee.user.get_full_name())
+        ws.cell(row=row, column=4, value=feedback.employee.department.name)
+        ws.cell(row=row, column=5, value=feedback.get_feedback_type_display())
+        ws.cell(row=row, column=6, value=feedback.content)
+        ws.cell(row=row, column=7, value='Đã Xử Lý' if feedback.is_resolved else 'Chưa Xử Lý')
+        ws.cell(row=row, column=8, value=feedback.resolved_at.strftime('%d/%m/%Y %H:%M') if feedback.resolved_at else '')
+        ws.cell(row=row, column=9, value=feedback.resolution_notes if feedback.resolution_notes else '')
+
+    # Adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column[0].column_letter].width = adjusted_width
+
+    # Create response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=danh_sach_phan_hoi.xlsx'
     wb.save(response)
     return response
