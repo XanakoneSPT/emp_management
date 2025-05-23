@@ -42,9 +42,9 @@ class Employee(models.Model):
     is_active = models.BooleanField(default=True, verbose_name='Đang làm việc')
     
     # Salary related fields
-    base_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Lương cơ bản')
-    hourly_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Lương theo giờ')
-    overtime_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Lương tăng ca')
+    base_salary = models.DecimalField(max_digits=20, decimal_places=0, default=0, verbose_name='Lương cơ bản')
+    hourly_rate = models.DecimalField(max_digits=20, decimal_places=0, default=0, verbose_name='Lương theo giờ')
+    overtime_rate = models.DecimalField(max_digits=20, decimal_places=0, default=0, verbose_name='Lương tăng ca')
     standard_work_hours = models.IntegerField(default=8, verbose_name='Số giờ làm tiêu chuẩn')  # Standard hours per day
 
     class Meta:
@@ -162,10 +162,10 @@ class Salary(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, verbose_name='Nhân viên')
     year = models.IntegerField(verbose_name='Năm')
     month = models.IntegerField(verbose_name='Tháng')
-    base_pay = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Lương cơ bản')
-    regular_hours_pay = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Lương giờ làm')
-    overtime_pay = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Lương tăng ca')
-    total_salary = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Tổng lương')
+    base_pay = models.DecimalField(max_digits=20, decimal_places=0, verbose_name='Lương cơ bản')
+    regular_hours_pay = models.DecimalField(max_digits=20, decimal_places=0, verbose_name='Lương giờ làm')
+    overtime_pay = models.DecimalField(max_digits=20, decimal_places=0, verbose_name='Lương tăng ca')
+    total_salary = models.DecimalField(max_digits=20, decimal_places=0, verbose_name='Tổng lương')
     total_days = models.IntegerField(verbose_name='Tổng số ngày')
     total_working_hours = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Tổng giờ làm')
     overtime_hours = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Giờ tăng ca')

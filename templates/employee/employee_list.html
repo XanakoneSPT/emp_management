@@ -80,7 +80,7 @@
                                         {% if employee.is_active %}Đang Làm{% else %}Đã Nghỉ{% endif %}
                                     </span>
                                 </td>
-                                <td>${{ employee.base_salary }}</td>
+                                <td>{{ employee.base_salary|floatformat:0 }} VNĐ</td>
                                 <td>
                                     <a href="{% url 'employee:edit_employee' employee.id %}" class="btn btn-sm btn-info">
                                         <i class="fas fa-edit"></i> Sửa

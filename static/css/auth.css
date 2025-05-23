@@ -1,0 +1,72 @@
+/* Authentication Pages Styling */
+.auth-container {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.auth-card .card {
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.auth-card .card-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    text-align: center;
+    padding: 2rem 1.5rem;
+    border-bottom: none;
+}
+
+.auth-card .card-header i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.auth-card .card-header h4 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.auth-card .card-body {
+    padding: 2rem;
+}
+
+.auth-card .form-floating {
+    margin-bottom: 1rem;
+}
+
+.auth-card .form-floating label {
+    color: var(--gray-600);
+}
+
+.auth-card .btn-primary {
+    width: 100%;
+    padding: 0.8rem;
+    font-weight: 500;
+    margin-top: 1rem;
+}
+
+.auth-card .auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    color: var(--gray-600);
+}
+
+.auth-card .auth-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-card .auth-footer a:hover {
+    text-decoration: underline;
+} 

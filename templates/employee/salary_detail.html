@@ -3,126 +3,128 @@
 {% block title %}Chi Tiết Lương - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12 mb-3">
-        <a href="{% if user.is_staff %}{% url 'employee:salary_list' %}{% else %}{% url 'employee:dashboard' %}{% endif %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Quay Lại
-        </a>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Thông Tin Nhân Viên</h5>
-            </div>
-            <div class="card-body">
-                <p><strong>Họ và tên:</strong> {{ salary.employee.user.get_full_name }}</p>
-                <p><strong>Mã nhân viên:</strong> {{ salary.employee.employee_id }}</p>
-                <p><strong>Phòng ban:</strong> {{ salary.employee.department.name }}</p>
-                <p><strong>Chức vụ:</strong> {{ salary.employee.position }}</p>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Chi Tiết Lương</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <tbody>
-                            <tr>
-                                <th>Lương cơ bản:</th>
-                                <td>{{ salary.base_pay|floatformat:0 }} VNĐ</td>
-                            </tr>
-                            <tr>
-                                <th>Lương giờ làm:</th>
-                                <td>{{ salary.regular_hours_pay|floatformat:0 }} VNĐ</td>
-                            </tr>
-                            <tr>
-                                <th>Lương tăng ca:</th>
-                                <td>{{ salary.overtime_pay|floatformat:0 }} VNĐ</td>
-                            </tr>
-                            <tr class="table-primary">
-                                <th>Tổng lương:</th>
-                                <td><strong>{{ salary.total_salary|floatformat:0 }} VNĐ</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<div class="content-wrapper">
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{% if user.is_staff %}{% url 'employee:salary_list' %}{% else %}{% url 'employee:dashboard' %}{% endif %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay Lại
+            </a>
         </div>
     </div>
 
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Thống Kê Chấm Công</h5>
-            </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="text-muted">Tổng Ngày Làm</h6>
-                                <h3>{{ salary.total_days }}</h3>
-                            </div>
-                        </div>
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Employee Information and Salary Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Thông Tin Nhân Viên & Lương</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <p><strong>Họ và tên:</strong> {{ salary.employee.user.get_full_name }}</p>
+                        <p><strong>Mã nhân viên:</strong> {{ salary.employee.employee_id }}</p>
+                        <p><strong>Phòng ban:</strong> {{ salary.employee.department.name }}</p>
+                        <p class="mb-0"><strong>Chức vụ:</strong> {{ salary.employee.position }}</p>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="text-muted">Tổng Giờ Làm</h6>
-                                <h3>{{ salary.total_working_hours|floatformat:1 }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="text-muted">Giờ Tăng Ca</h6>
-                                <h3>{{ salary.overtime_hours|floatformat:1 }}</h3>
-                            </div>
-                        </div>
+
+                    <h6 class="mb-3">Chi Tiết Lương</h6>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Lương cơ bản:</th>
+                                    <td class="text-end">{{ salary.base_pay|floatformat:0 }} VNĐ</td>
+                                </tr>
+                                <tr>
+                                    <th>Lương giờ làm:</th>
+                                    <td class="text-end">{{ salary.regular_hours_pay|floatformat:0 }} VNĐ</td>
+                                </tr>
+                                <tr>
+                                    <th>Lương tăng ca:</th>
+                                    <td class="text-end">{{ salary.overtime_pay|floatformat:0 }} VNĐ</td>
+                                </tr>
+                                <tr>
+                                    <th>Tổng lương:</th>
+                                    <td class="text-end text-primary"><strong>{{ salary.total_salary|floatformat:0 }} VNĐ</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Ngày</th>
-                                <th>Giờ vào</th>
-                                <th>Giờ ra</th>
-                                <th>Số giờ làm</th>
-                                <th>Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in attendance_records %}
-                            <tr>
-                                <td>{{ record.date }}</td>
-                                <td>{{ record.check_in|time|default:'-' }}</td>
-                                <td>{{ record.check_out|time|default:'-' }}</td>
-                                <td>{{ record.calculate_working_hours|floatformat:1 }} giờ</td>
-                                <td>
-                                    <span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
-                                        {% if record.status == 'present' %}Có mặt
-                                        {% elif record.status == 'late' %}Đi muộn
-                                        {% elif record.status == 'absent' %}Vắng mặt
-                                        {% else %}{{ record.status|title }}{% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center">Không có dữ liệu chấm công trong kỳ này</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        <div class="col-md-8">
+            <!-- Attendance Statistics Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Thống Kê Chấm Công</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Statistics Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Tổng Ngày Làm</h6>
+                                    <h3>{{ salary.total_days }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Tổng Giờ Làm</h6>
+                                    <h3>{{ salary.total_working_hours|floatformat:1 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Giờ Tăng Ca</h6>
+                                    <h3>{{ salary.overtime_hours|floatformat:1 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Records Table -->
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Giờ vào</th>
+                                    <th>Giờ ra</th>
+                                    <th>Số giờ làm</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records %}
+                                <tr>
+                                    <td>{{ record.date }}</td>
+                                    <td>{{ record.check_in|time|default:'-' }}</td>
+                                    <td>{{ record.check_out|time|default:'-' }}</td>
+                                    <td>{{ record.calculate_working_hours|floatformat:1 }} giờ</td>
+                                    <td>
+                                        <span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {% if record.status == 'present' %}Có mặt
+                                            {% elif record.status == 'late' %}Đi muộn
+                                            {% elif record.status == 'absent' %}Vắng mặt
+                                            {% else %}{{ record.status|title }}{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Không có dữ liệu chấm công trong kỳ này</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

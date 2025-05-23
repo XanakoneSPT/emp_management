@@ -1,21 +1,25 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="h-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Hệ Thống Quản Lý Nhân Viên{% endblock %}</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'css/auth.css' %}" rel="stylesheet">
+    <link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+    <link href="{% static 'css/forms.css' %}" rel="stylesheet">
+    <link href="{% static 'css/tables.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="d-flex flex-column h-100">
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay" style="display: none;">
         <div class="spinner-border text-primary" role="status">
@@ -23,106 +27,167 @@
         </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'employee:dashboard' %}">
-                <i class="fas fa-building me-2"></i>HTQLNV
+    <!-- Sidebar Toggle Button (Mobile) -->
+    <button class="sidebar-toggle" type="button" data-bs-toggle="sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a class="sidebar-brand" href="{% url 'employee:dashboard' %}">
+                <i class="fas fa-building"></i>
+                <span class="brand-text">HTQLNV</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+            <button class="sidebar-toggle-btn" id="sidebarToggle">
+                <i class="fas fa-ellipsis-vertical"></i>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+        </div>
+        
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'employee:dashboard' %}">
-                            <i class="fas fa-tachometer-alt me-1"></i>Trang Chủ
+        <!-- Main Navigation -->
+        <div class="nav-menu">
+            <div class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                   href="{% url 'employee:dashboard' %}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Trang Chủ</span>
                         </a>
-                    </li>
+            </div>
+            
                     {% if user.is_staff %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'employee:employee_list' %}">
-                            <i class="fas fa-users me-1"></i>Nhân Viên
+            <div class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'employee_list' %}active{% endif %}" 
+                   href="{% url 'employee:employee_list' %}">
+                    <i class="fas fa-users"></i>
+                    <span>Nhân Viên</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'employee:manage_attendance' %}">
-                            <i class="fas fa-clock me-1"></i>Chấm Công
+            </div>
+            
+            <div class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'manage_attendance' %}active{% endif %}" 
+                   href="{% url 'employee:manage_attendance' %}">
+                    <i class="fas fa-clock"></i>
+                    <span>Chấm Công</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'employee:salary_list' %}">
-                            <i class="fas fa-money-bill-wave me-1"></i>Lương
+            </div>
+            
+            <div class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'salary_list' %}active{% endif %}" 
+                   href="{% url 'employee:salary_list' %}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Lương</span>
                         </a>
-                    </li>
+            </div>
                     {% endif %}
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav">
-                    {% if user.is_authenticated %}
-                    <li class="nav-item dropdown">
+        </div>
+
+        <!-- User Profile (Bottom) -->
+        <div class="nav-menu mt-auto user-profile">
+            <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i>{{ user.get_full_name|default:user.username }}
+                    <i class="fas fa-user-circle"></i>
+                    <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                <ul class="dropdown-menu">
                             {% if user.is_staff %}
                             <li>
                                 <a class="dropdown-item" href="/admin">
-                                    <i class="fas fa-user-shield me-2"></i>Quản Lý Quản Trị Viên
+                            <i class="fas fa-user-shield me-2"></i>
+                            <span>Quản Lý Quản Trị Viên</span>
                                 </a>
                             </li>
                             {% else %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'employee:dashboard' %}">
-                                    <i class="fas fa-user me-2"></i>Trang Cá Nhân
+                            <i class="fas fa-user me-2"></i>
+                            <span>Trang Cá Nhân</span>
                                 </a>
                             </li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'employee:logout' %}">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Đăng Xuất
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'employee:login' %}">
-                            <i class="fas fa-sign-in-alt me-1"></i>Đăng Nhập
+                        <a class="dropdown-item text-danger" href="{% url 'employee:logout' %}">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            <span>Đăng Xuất</span>
                         </a>
                     </li>
-                    {% endif %}
                 </ul>
             </div>
         </div>
+        {% else %}
+        <div class="nav-menu">
+            <div class="nav-item">
+                <a class="nav-link" href="{% url 'employee:login' %}">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Đăng Nhập</span>
+                </a>
+            </div>
+        </div>
+        {% endif %}
     </nav>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Spacing Controls -->
+    <div class="spacing-controls" id="spacingControls">
+        <div class="spacing-controls-header">
+            <span class="spacing-controls-title">Layout Settings</span>
+            <button class="spacing-controls-close" id="closeSpacingControls">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-        {% endfor %}
-        {% endif %}
-
-        {% block content %}
-        {% endblock %}
+        <div class="spacing-control">
+            <label for="sidebarWidth">Sidebar Width (px)</label>
+            <input type="number" id="sidebarWidth" min="80" max="400" value="280" step="10">
+        </div>
+        <div class="spacing-control">
+            <label for="contentPadding">Content Padding (px)</label>
+            <input type="number" id="contentPadding" min="8" max="48" value="32" step="4">
+        </div>
+        <div class="spacing-control">
+            <label for="elementSpacing">Element Spacing (px)</label>
+            <input type="number" id="elementSpacing" min="8" max="32" value="24" step="4">
+        </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer mt-5 py-3 bg-light">
-        <div class="container text-center">
-            <span class="text-muted">© {% now "Y" %} Hệ Thống Quản Lý Nhân Viên.</span>
+    <!-- Main Content -->
+    <div class="main-content {% if request.session.sidebar_collapsed %}expanded{% endif %}">
+        <div class="content-wrapper">
+        {% if messages %}
+            <div class="messages">
+        {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <div class="d-flex align-items-center">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif message.tags == 'info' %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        <div>{{ message }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+            </div>
+        {% endif %}
+
+            {% block content %}{% endblock %}
+    </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="text-center">
+                    <p class="mb-0">&copy; {% now "Y" %} Employee Management System. All rights reserved.</p>
+                </div>
         </div>
     </footer>
+    </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     // Show loading overlay
     function showLoading() {
@@ -134,14 +199,195 @@
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
-    // Add loading indicator to forms
+    // Sidebar and Layout Management
     document.addEventListener('DOMContentLoaded', function() {
-        const forms = document.querySelectorAll('form:not(.no-loading)');
-        forms.forEach(form => {
-            form.addEventListener('submit', function() {
-                showLoading();
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarWidth = document.getElementById('sidebarWidth');
+        const contentPadding = document.getElementById('contentPadding');
+        const elementSpacing = document.getElementById('elementSpacing');
+        
+        // Toggle sidebar
+        function toggleSidebar() {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            
+            // Save state to localStorage
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            
+            // Update spacing controls if visible
+            if (sidebarWidth) {
+                sidebarWidth.value = sidebar.classList.contains('collapsed') 
+                    ? 70  // collapsed width
+                    : 250; // expanded width
+                updateSpacing();
+            }
+        }
+        
+        // Initialize sidebar state from localStorage
+        function initializeSidebar() {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+        }
+        
+        // Add click event to toggle button
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', toggleSidebar);
+        }
+        
+        // Mobile sidebar toggle
+        const mobileToggle = document.querySelector('[data-bs-toggle="sidebar"]');
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                sidebar.classList.toggle('show');
             });
+        }
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !mobileToggle?.contains(e.target) &&
+                sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+            }
         });
+        
+        // Update spacing based on input values
+        function updateSpacing() {
+            if (sidebarWidth && contentPadding && elementSpacing) {
+                document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth.value}px`);
+                document.documentElement.style.setProperty('--content-padding', `${contentPadding.value}px`);
+                document.documentElement.style.setProperty('--element-spacing', `${elementSpacing.value}px`);
+                
+                // Save to localStorage
+                const preferences = {
+                    sidebarWidth: sidebarWidth.value,
+                    contentPadding: contentPadding.value,
+                    elementSpacing: elementSpacing.value
+                };
+                localStorage.setItem('spacingPreferences', JSON.stringify(preferences));
+            }
+        }
+        
+        // Load saved preferences
+        function loadPreferences() {
+            const savedPreferences = localStorage.getItem('spacingPreferences');
+            if (savedPreferences && sidebarWidth && contentPadding && elementSpacing) {
+                const preferences = JSON.parse(savedPreferences);
+                sidebarWidth.value = preferences.sidebarWidth;
+                contentPadding.value = preferences.contentPadding;
+                elementSpacing.value = preferences.elementSpacing;
+                updateSpacing();
+            }
+        }
+        
+        // Initialize everything
+        initializeSidebar();
+        loadPreferences();
+        
+        // Add event listeners for spacing controls
+        if (sidebarWidth && contentPadding && elementSpacing) {
+            [sidebarWidth, contentPadding, elementSpacing].forEach(input => {
+                input.addEventListener('input', updateSpacing);
+            });
+        }
+        
+        // Keyboard shortcut for spacing controls
+        const spacingControls = document.getElementById('spacingControls');
+        if (spacingControls) {
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    spacingControls.classList.toggle('d-none');
+                }
+            });
+        }
+    });
+
+    // Spacing Controls Management
+    document.addEventListener('DOMContentLoaded', function() {
+        const spacingControls = document.getElementById('spacingControls');
+        const closeSpacingControls = document.getElementById('closeSpacingControls');
+        const sidebarWidth = document.getElementById('sidebarWidth');
+        const contentPadding = document.getElementById('contentPadding');
+        const elementSpacing = document.getElementById('elementSpacing');
+
+        // Initially hide the controls
+        spacingControls.classList.add('d-none');
+
+        // Toggle controls visibility with keyboard shortcut
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                spacingControls.classList.toggle('d-none');
+            }
+        });
+
+        // Close button functionality
+        closeSpacingControls.addEventListener('click', function() {
+            spacingControls.classList.add('d-none');
+        });
+
+        // Update spacing with debounce
+        let updateTimeout;
+        function debouncedUpdate(value, property) {
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(() => {
+                document.documentElement.style.setProperty(property, `${value}px`);
+                savePreferences();
+            }, 150);
+        }
+
+        // Input event listeners
+        sidebarWidth.addEventListener('input', function() {
+            debouncedUpdate(this.value, '--sidebar-width');
+            if (!document.getElementById('sidebar').classList.contains('collapsed')) {
+                document.documentElement.style.setProperty('--sidebar-width', `${this.value}px`);
+            }
+        });
+
+        contentPadding.addEventListener('input', function() {
+            debouncedUpdate(this.value, '--content-padding');
+            });
+
+        elementSpacing.addEventListener('input', function() {
+            debouncedUpdate(this.value, '--element-spacing');
+        });
+
+        // Save preferences
+        function savePreferences() {
+            const preferences = {
+                sidebarWidth: sidebarWidth.value,
+                contentPadding: contentPadding.value,
+                elementSpacing: elementSpacing.value
+            };
+            localStorage.setItem('layoutPreferences', JSON.stringify(preferences));
+        }
+
+        // Load preferences
+        function loadPreferences() {
+            const saved = localStorage.getItem('layoutPreferences');
+            if (saved) {
+                const prefs = JSON.parse(saved);
+                sidebarWidth.value = prefs.sidebarWidth;
+                contentPadding.value = prefs.contentPadding;
+                elementSpacing.value = prefs.elementSpacing;
+                
+                // Apply saved values
+                document.documentElement.style.setProperty('--sidebar-width', `${prefs.sidebarWidth}px`);
+                document.documentElement.style.setProperty('--content-padding', `${prefs.contentPadding}px`);
+                document.documentElement.style.setProperty('--element-spacing', `${prefs.elementSpacing}px`);
+            }
+        }
+
+        // Initialize preferences
+        loadPreferences();
     });
     </script>
     {% block extra_js %}{% endblock %}

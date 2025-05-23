@@ -24,6 +24,7 @@ import logging
 import traceback
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+from django.urls import reverse
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -289,14 +290,15 @@ def salary_list(request):
 @staff_member_required
 def generate_salary(request):
     if request.method == 'POST':
-        year = int(request.POST.get('year'))
-        month = int(request.POST.get('month'))
-        employee_ids = request.POST.getlist('employees')
+        year = int(request.POST.get('year', datetime.now().year))
+        month = int(request.POST.get('month', datetime.now().month))
         
         try:
             with transaction.atomic():
-                for employee_id in employee_ids:
-                    employee = Employee.objects.get(id=employee_id)
+                # Get all active employees
+                employees = Employee.objects.filter(is_active=True)
+                
+                for employee in employees:
                     salary_data = employee.calculate_monthly_salary(year, month)
                     
                     # Create or update salary record
@@ -315,12 +317,13 @@ def generate_salary(request):
                         }
                     )
                 
-                messages.success(request, 'Salary calculation completed successfully!')
+                messages.success(request, f'Đã tính lương tháng {month}/{year} cho {employees.count()} nhân viên!')
             
         except Exception as e:
-            messages.error(request, f'Error generating salary: {str(e)}')
+            messages.error(request, f'Lỗi khi tính lương: {str(e)}')
         
-        return redirect('employee:salary_list')
+        # Redirect back with the same filters
+        return redirect(f"{reverse('employee:salary_list')}?month={month}&year={year}")
     
     return redirect('employee:salary_list')
 

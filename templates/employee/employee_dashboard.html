@@ -3,192 +3,585 @@
 {% block title %}Trang Cá Nhân - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
 {% block content %}
-{% if user.is_staff %}
-<!-- ... existing code ... -->
-{% else %}
+<div class="dashboard-wrapper">
+    {% if user.is_staff %}
+    <!-- ... existing code ... -->
+    {% else %}
 
-<div class="row">
-    <!-- Employee Profile Card -->
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Thông Tin Nhân Viên</h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center mb-4">
-                    {% if employee.face_image %}
-                    <img src="{{ employee.face_image.url }}" alt="Ảnh Đại Diện" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
-                    {% else %}
-                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
-                        <i class="fas fa-user fa-4x text-white"></i>
+    <div class="container-fluid px-4 mb-5">
+        <div class="row">
+            <!-- Employee Profile Card -->
+            <div class="col-md-4 mb-4">
+                <div class="card profile-card h-100">
+                    <div class="profile-cover"></div>
+                    <div class="card-body">
+                        <div class="text-center position-relative">
+                            <div class="profile-image-wrapper">
+                                {% if employee.face_image %}
+                                <img src="{{ employee.face_image.url }}" alt="Ảnh Đại Diện" class="profile-image">
+                                {% else %}
+                                <div class="profile-image-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="profile-info-container">
+                                <h4 class="profile-name" data-bs-toggle="tooltip" title="{{ employee.user.get_full_name }}">
+                                    {{ employee.user.get_full_name }}
+                                </h4>
+                                <p class="profile-position" data-bs-toggle="tooltip" title="{{ employee.get_position_display }}">
+                                    {{ employee.get_position_display }}
+                                </p>
+                                <div class="profile-department" data-bs-toggle="tooltip" title="{{ employee.department.name }}">
+                                    <i class="fas fa-building me-1"></i>
+                                    {{ employee.department.name }}
+                                </div>
+                            </div>
+                            <div class="badge bg-primary-soft mb-3 mt-2">
+                                {{ employee.employee_id }}
+                            </div>
+                        </div>
+
+                        <div class="profile-info">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-envelope text-primary"></i>
+                                    <span>Email</span>
+                                </div>
+                                <div class="info-value">{{ employee.user.email }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-phone text-primary"></i>
+                                    <span>Số Điện Thoại</span>
+                                </div>
+                                <div class="info-value">{{ employee.phone_number }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-calendar-alt text-primary"></i>
+                                    <span>Ngày Vào Làm</span>
+                                </div>
+                                <div class="info-value">{{ employee.joining_date|date:"d/m/Y" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                <i class="fas fa-comment-alt me-2"></i>Gửi Phản Hồi
+                            </button>
+                        </div>
                     </div>
-                    {% endif %}
-                    <h4>{{ employee.user.get_full_name }}</h4>
-                    <p class="text-muted">{{ employee.position }}</p>
                 </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">
-                        <strong>Mã Nhân Viên:</strong> {{ employee.employee_id }}
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Phòng Ban:</strong> {{ employee.department.name }}
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Email:</strong> {{ employee.user.email }}
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Số Điện Thoại:</strong> {{ employee.phone_number }}
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Ngày Vào Làm:</strong> {{ employee.joining_date }}
-                    </li>
-                </ul>
+            </div>
+
+            <div class="col-md-8">
+                <!-- Monthly Stats -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card stat-card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h3 class="mb-0">{{ monthly_stats.total_days|default:0 }}</h3>
+                                        <small>Ngày Làm Việc</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h3 class="mb-0">{{ monthly_stats.total_hours|default:0|floatformat:1 }}</h3>
+                                        <small>Giờ Làm Việc</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card bg-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-hourglass-half"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h3 class="mb-0">{{ monthly_stats.overtime_hours|default:0|floatformat:1 }}</h3>
+                                        <small>Giờ Tăng Ca</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Attendance -->
+                <div class="card attendance-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">Chấm Công Gần Đây</h5>
+                            <small class="text-muted">Tháng {{ current_month }}/{{ current_year }}</small>
+                        </div>
+                        <a href="{% url 'employee:auto_mark_attendance' %}" class="btn btn-primary">
+                            <i class="fas fa-camera me-2"></i>Chấm Công
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Ngày</th>
+                                        <th>Giờ Vào</th>
+                                        <th>Giờ Ra</th>
+                                        <th>Trạng Thái</th>
+                                        <th class="pe-4">Số Giờ Làm</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in attendance %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="date-box text-center me-3">
+                                                    <div class="date-day">{{ record.date|date:"d" }}</div>
+                                                    <small class="date-month text-muted">{{ record.date|date:"M" }}</small>
+                                                </div>
+                                                <div class="text-muted">{{ record.date|date:"l"|title }}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if record.check_in %}
+                                            <span class="text-dark">{{ record.check_in|date:"g:i A" }}</span>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.check_out %}
+                                            <span class="text-dark">{{ record.check_out|date:"g:i A" }}</span>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="status-badge {% if record.status == 'present' %}status-success{% elif record.status == 'late' %}status-warning{% elif record.status == 'half_day' %}status-info{% else %}status-danger{% endif %}">
+                                                {% if record.status == 'present' %}Có Mặt
+                                                {% elif record.status == 'absent' %}Vắng Mặt
+                                                {% elif record.status == 'late' %}Đi Muộn
+                                                {% elif record.status == 'half_day' %}Nửa Ngày
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="pe-4">
+                                            {% if record.check_in and record.check_out %}
+                                            <span class="text-dark">{{ record.calculate_working_hours|floatformat:2 }} giờ</span>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5">
+                                            <div class="text-muted">
+                                                <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                                <p class="mb-0">Không có bản ghi chấm công nào</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-8">
-        <!-- Monthly Summary -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Tổng Kết Tháng</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-subtitle mb-2 text-muted">Số Ngày Có Mặt</h6>
-                                <h2 class="card-title mb-0">{{ monthly_stats.total_days|default:0 }}</h2>
-                            </div>
+    <!-- Feedback Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="feedbackModalLabel">Gửi Phản Hồi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'employee:submit_feedback' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="feedbackType" class="form-label">Loại Phản Hồi</label>
+                            <select class="form-select" id="feedbackType" name="feedback_type" required>
+                                <option value="">Chọn loại phản hồi</option>
+                                <option value="suggestion">Đề Xuất Cải Thiện</option>
+                                <option value="issue">Báo Cáo Vấn Đề</option>
+                                <option value="complaint">Khiếu Nại</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="feedbackContent" class="form-label">Nội Dung</label>
+                            <textarea class="form-control" id="feedbackContent" name="content" rows="4" required></textarea>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-subtitle mb-2 text-muted">Số Giờ Làm Việc</h6>
-                                <h2 class="card-title mb-0">{{ monthly_stats.total_hours|default:0|floatformat:1 }}</h2>
-                            </div>
-                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Gửi Phản Hồi</button>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-subtitle mb-2 text-muted">Số Giờ Tăng Ca</h6>
-                                <h2 class="card-title mb-0">{{ monthly_stats.overtime_hours|default:0|floatformat:1 }}</h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Attendance -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Chấm Công Gần Đây</h5>
-                <div class="btn-group">
-                    <a href="{% url 'employee:auto_mark_attendance' %}" class="btn btn-primary">
-                        <i class="fas fa-camera me-2"></i>Chấm Công
-                    </a>
-                    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#feedbackModal">
-                        <i class="fas fa-comment-alt me-2"></i>Phản Hồi
-                    </button>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Ngày</th>
-                                <th>Giờ Vào</th>
-                                <th>Giờ Ra</th>
-                                <th>Trạng Thái</th>
-                                <th>Số Giờ Làm</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in attendance %}
-                            <tr>
-                                <td>{{ record.date }}</td>
-                                <td>
-                                    {% if record.check_in %}
-                                    {{ record.check_in|date:"g:i A" }}
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if record.check_out %}
-                                    {{ record.check_out|date:"g:i A" }}
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
-                                        {% if record.status == 'present' %}Có Mặt
-                                        {% elif record.status == 'absent' %}Vắng Mặt
-                                        {% elif record.status == 'late' %}Đi Muộn
-                                        {% elif record.status == 'half_day' %}Nửa Ngày
-                                        {% endif %}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if record.check_in and record.check_out %}
-                                    {{ record.calculate_working_hours|floatformat:2 }} giờ
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center">Không có bản ghi chấm công nào</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                </form>
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
+{% endblock %}
 
-<!-- Feedback Modal -->
-<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="feedbackModalLabel">Gửi Phản Hồi</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="post" action="{% url 'employee:submit_feedback' %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="feedbackType" class="form-label">Loại Phản Hồi</label>
-                        <select class="form-select" id="feedbackType" name="feedback_type" required>
-                            <option value="">Chọn loại phản hồi</option>
-                            <option value="suggestion">Đề Xuất Cải Thiện</option>
-                            <option value="issue">Báo Cáo Vấn Đề</option>
-                            <option value="complaint">Khiếu Nại</option>
-                            <option value="other">Khác</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="feedbackContent" class="form-label">Nội Dung</label>
-                        <textarea class="form-control" id="feedbackContent" name="content" rows="4" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn btn-primary">Gửi Phản Hồi</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endif %}
+{% block extra_css %}
+<style>
+.container-fluid {
+    max-width: 1400px;
+}
+
+.profile-card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    overflow: hidden;
+}
+
+.profile-cover {
+    height: 100px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+}
+
+.profile-image-wrapper {
+    margin-top: -50px;
+    margin-bottom: 1rem;
+}
+
+.profile-image, .profile-image-placeholder {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    margin: 0 auto;
+}
+
+.profile-image {
+    object-fit: cover;
+}
+
+.profile-image-placeholder {
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-image-placeholder i {
+    font-size: 2.5rem;
+    color: #adb5bd;
+}
+
+.bg-primary-soft {
+    background-color: rgba(var(--primary-rgb), 0.1);
+    color: var(--primary-color);
+}
+
+.profile-info {
+    margin-top: 1.5rem;
+}
+
+.info-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    display: flex;
+    align-items: center;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.info-label i {
+    width: 20px;
+    margin-right: 0.5rem;
+}
+
+.info-value {
+    font-weight: 500;
+    color: #212529;
+}
+
+.stat-card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon i {
+    font-size: 1.25rem;
+    color: white;
+}
+
+.date-box {
+    min-width: 40px;
+}
+
+.date-day {
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1;
+    color: #212529;
+}
+
+.date-month {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.status-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.status-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.status-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    color: #17a2b8;
+}
+
+.table > :not(caption) > * > * {
+    padding: 1rem;
+    border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+.table-light {
+    background-color: #f8f9fa;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border-radius: 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-wrapper {
+    min-height: calc(100vh - var(--footer-height) - var(--header-height));
+    padding-bottom: 2rem;
+    position: relative;
+}
+
+.container-fluid {
+    margin-bottom: 3rem;
+}
+
+.card {
+    margin-bottom: 1.5rem;
+}
+
+.container-fluid > .row:last-child .card:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .dashboard-wrapper {
+        padding-bottom: 4rem;
+    }
+    
+    .container-fluid {
+        margin-bottom: 2rem;
+    }
+}
+
+/* Add these new styles for the attendance card */
+.attendance-card {
+    height: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+.attendance-card .card-body {
+    flex: 1;
+    padding: 0;
+    overflow: hidden;
+}
+
+.attendance-card .table-responsive {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar for better appearance */
+.attendance-card .table-responsive::-webkit-scrollbar {
+    width: 6px;
+}
+
+.attendance-card .table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.attendance-card .table-responsive::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.attendance-card .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Ensure table header stays fixed */
+.attendance-card thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8f9fa;
+}
+
+/* Add shadow to header when scrolling */
+.attendance-card thead::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%);
+}
+
+@media (max-width: 768px) {
+    .attendance-card {
+        height: 400px;
+    }
+}
+
+/* Add these styles for name handling */
+.profile-info-container {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.profile-name {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.profile-position {
+    font-size: 0.875rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.profile-department {
+    font-size: 0.875rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Update profile card styles */
+.profile-card .card-body {
+    padding: 1.5rem;
+}
+
+.profile-image-wrapper {
+    margin: -3rem auto 1rem;
+    position: relative;
+    z-index: 2;
+    width: 100px;
+}
+
+/* Ensure text alignment and spacing */
+.text-center {
+    text-align: center !important;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Add tooltip for long text */
+[data-bs-toggle="tooltip"] {
+    cursor: help;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            boundary: 'window'
+        });
+    });
+});
+</script>
 {% endblock %} 

@@ -13,9 +13,14 @@
                     <a href="{% url 'employee:export_salary_list' %}{% if month %}?month={{ month }}{% endif %}{% if year %}&year={{ year }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}" class="btn btn-success me-2">
                         <i class="fas fa-file-excel"></i> Xuất Excel
                     </a>
-                    <a href="{% url 'employee:generate_salary' %}" class="btn btn-primary">
-                        <i class="fas fa-calculator"></i> Tính Lương
-                    </a>
+                    <form method="post" action="{% url 'employee:generate_salary' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="year" value="{{ current_year }}">
+                        <input type="hidden" name="month" value="{{ current_month }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-calculator"></i> Tính Lương
+                        </button>
+                    </form>
                 </div>
             </div>
             <div class="card-body">
@@ -88,10 +93,10 @@
                                 <td>{{ salary.employee.employee_id }}</td>
                                 <td>{{ salary.employee.user.get_full_name }}</td>
                                 <td>{{ salary.employee.department.name }}</td>
-                                <td>${{ salary.base_pay }}</td>
-                                <td>${{ salary.regular_hours_pay }}</td>
-                                <td>${{ salary.overtime_pay }}</td>
-                                <td>${{ salary.total_salary }}</td>
+                                <td>{{ salary.base_pay|floatformat:0 }} VNĐ</td>
+                                <td>{{ salary.regular_hours_pay|floatformat:0 }} VNĐ</td>
+                                <td>{{ salary.overtime_pay|floatformat:0 }} VNĐ</td>
+                                <td>{{ salary.total_salary|floatformat:0 }} VNĐ</td>
                                 <td>
                                     <a href="{% url 'employee:salary_detail' salary.id %}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-eye"></i> Chi Tiết
