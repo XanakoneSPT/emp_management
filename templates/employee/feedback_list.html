@@ -103,81 +103,16 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewModal{{ feedback.id }}">
+                                <a href="{% url 'employee:feedback_detail' feedback.id %}" class="btn btn-sm btn-info">
                                     <i class="fas fa-eye"></i>
-                                </button>
+                                </a>
                                 {% if not feedback.is_resolved %}
-                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#resolveModal{{ feedback.id }}">
+                                <a href="{% url 'employee:feedback_detail' feedback.id %}" class="btn btn-sm btn-success">
                                     <i class="fas fa-check"></i>
-                                </button>
+                                </a>
                                 {% endif %}
                             </td>
                         </tr>
-
-                        <!-- View Modal -->
-                        <div class="modal fade" id="viewModal{{ feedback.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Chi Tiết Phản Hồi</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <dl class="row">
-                                            <dt class="col-sm-3">Nhân Viên:</dt>
-                                            <dd class="col-sm-9">{{ feedback.employee.user.get_full_name }}</dd>
-
-                                            <dt class="col-sm-3">Phòng Ban:</dt>
-                                            <dd class="col-sm-9">{{ feedback.employee.department.name }}</dd>
-
-                                            <dt class="col-sm-3">Loại Phản Hồi:</dt>
-                                            <dd class="col-sm-9">{{ feedback.get_feedback_type_display }}</dd>
-
-                                            <dt class="col-sm-3">Thời Gian Gửi:</dt>
-                                            <dd class="col-sm-9">{{ feedback.submitted_at|date:"d/m/Y H:i" }}</dd>
-
-                                            <dt class="col-sm-3">Nội Dung:</dt>
-                                            <dd class="col-sm-9">{{ feedback.content }}</dd>
-
-                                            {% if feedback.is_resolved %}
-                                            <dt class="col-sm-3">Thời Gian Xử Lý:</dt>
-                                            <dd class="col-sm-9">{{ feedback.resolved_at|date:"d/m/Y H:i" }}</dd>
-
-                                            <dt class="col-sm-3">Ghi Chú Xử Lý:</dt>
-                                            <dd class="col-sm-9">{{ feedback.resolution_notes }}</dd>
-                                            {% endif %}
-                                        </dl>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Resolve Modal -->
-                        {% if not feedback.is_resolved %}
-                        <div class="modal fade" id="resolveModal{{ feedback.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Xử Lý Phản Hồi</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form method="post" action="{% url 'employee:resolve_feedback' feedback.id %}">
-                                        {% csrf_token %}
-                                        <div class="modal-body">
-                                            <div class="mb-3">
-                                                <label for="resolutionNotes{{ feedback.id }}" class="form-label">Ghi Chú Xử Lý</label>
-                                                <textarea class="form-control" id="resolutionNotes{{ feedback.id }}" name="resolution_notes" rows="4" required></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                            <button type="submit" class="btn btn-success">Xác Nhận Xử Lý</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
                         {% empty %}
                         <tr>
                             <td colspan="7" class="text-center">Không có phản hồi nào</td>

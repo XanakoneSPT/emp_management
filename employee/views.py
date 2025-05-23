@@ -43,7 +43,7 @@ def login_view(request):
             next_url = request.GET.get('next', 'employee:dashboard')
             return redirect(next_url)
         else:
-            messages.error(request, 'Invalid username or password')
+            messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng')
     
     return render(request, 'employee/login.html')
 
@@ -167,7 +167,7 @@ def mark_attendance(request):
             face_locations = face_recognition.face_locations(uploaded_image)
             
             if not face_locations:
-                messages.error(request, 'No face detected in the image')
+                messages.error(request, 'Không phát hiện khuôn mặt trong ảnh')
                 return redirect('mark_attendance')
             
             # Get face encoding of the uploaded image
@@ -202,16 +202,16 @@ def mark_attendance(request):
                     if not attendance.check_out:
                         attendance.check_out = timezone.now()
                         attendance.save()
-                        messages.success(request, 'Check-out recorded successfully!')
+                        messages.success(request, 'Đã ghi nhận giờ ra!')
                     else:
-                        messages.info(request, 'You have already completed your attendance for today')
+                        messages.info(request, 'Bạn đã chấm công đầy đủ cho hôm nay')
                 else:
-                    messages.success(request, 'Check-in recorded successfully!')
+                    messages.success(request, 'Đã ghi nhận giờ vào!')
             else:
-                messages.error(request, 'Face verification failed')
+                messages.error(request, 'Xác thực khuôn mặt thất bại')
                 
         except Exception as e:
-            messages.error(request, f'Error processing attendance: {str(e)}')
+            messages.error(request, f'Lỗi xử lý chấm công: {str(e)}')
         
         return redirect('dashboard')
     
@@ -224,27 +224,23 @@ def register_face(request):
         
         if request.method == 'POST' and request.FILES.get('face_image'):
             try:
-                # Load and process the uploaded image
                 image = face_recognition.load_image_file(request.FILES['face_image'])
                 face_locations = face_recognition.face_locations(image)
                 
                 if not face_locations:
-                    messages.error(request, 'No face detected in the image')
+                    messages.error(request, 'Không phát hiện khuôn mặt trong ảnh')
                     return redirect('register_face')
                 
-                # Get face encoding
                 face_encoding = face_recognition.face_encodings(image)[0]
-                
-                # Save the face encoding and image
                 employee.face_encoding = face_encoding.tobytes()
                 employee.face_image = request.FILES['face_image']
                 employee.save()
                 
-                messages.success(request, 'Face registered successfully!')
+                messages.success(request, 'Đăng ký khuôn mặt thành công!')
                 return redirect('dashboard')
                 
             except Exception as e:
-                messages.error(request, f'Error processing image: {str(e)}')
+                messages.error(request, f'Lỗi xử lý ảnh: {str(e)}')
                 return redirect('register_face')
         
         return render(request, 'employee/register_face.html', {'employee': employee})
@@ -333,7 +329,7 @@ def salary_detail(request, salary_id):
     
     # Only allow staff or the employee themselves to view salary details
     if not request.user.is_staff and request.user != salary.employee.user:
-        messages.error(request, "You don't have permission to view this salary record.")
+        messages.error(request, "Bạn không có quyền xem thông tin lương này.")
         return redirect('employee:dashboard')
     
     # Get attendance records for the salary period
@@ -382,10 +378,10 @@ def add_employee(request):
                     
                     employee.save()
                     
-                    messages.success(request, 'Employee added successfully!')
+                    messages.success(request, 'Thêm nhân viên mới thành công!')
                     return redirect('employee:employee_list')
             except Exception as e:
-                messages.error(request, f'Error creating employee: {str(e)}')
+                messages.error(request, f'Lỗi khi tạo nhân viên: {str(e)}')
     else:
         form = EmployeeForm()
     
@@ -427,7 +423,7 @@ def edit_employee(request, employee_id):
                 except Exception as e:
                     messages.error(request, f'Không thể tạo dữ liệu khuôn mặt: {str(e)}')
 
-            messages.success(request, 'Cập nhật thông tin nhân viên thành công')
+            messages.success(request, 'Cập nhật thông tin nhân viên thành công!')
             return redirect('employee:employee_list')
     else:
         initial_data = {
@@ -593,106 +589,98 @@ def process_auto_attendance(request):
     """Process the face recognition and mark attendance"""
     if request.method == 'POST' and request.FILES.get('face_image'):
         try:
-            # Log the start of processing with more details
-            logger.info("=== Starting face recognition process ===")
-            logger.info(f"Request method: {request.method}")
-            logger.info(f"Files in request: {request.FILES.keys()}")
-            logger.info(f"Image file type: {request.FILES['face_image'].content_type}")
-            logger.info(f"Image file size: {request.FILES['face_image'].size}")
+            logger.info("=== Bắt đầu quá trình nhận diện khuôn mặt ===")
+            logger.info(f"Phương thức yêu cầu: {request.method}")
+            logger.info(f"File trong yêu cầu: {request.FILES.keys()}")
+            logger.info(f"Loại file ảnh: {request.FILES['face_image'].content_type}")
+            logger.info(f"Kích thước file: {request.FILES['face_image'].size}")
             
-            # Validate image file
             image_file = request.FILES['face_image']
             if not image_file.content_type.startswith('image/'):
-                logger.error(f"Invalid file type: {image_file.content_type}")
+                logger.error(f"Loại file không hợp lệ: {image_file.content_type}")
                 return JsonResponse({
                     'success': False,
-                    'message': 'Invalid file type. Please upload an image file.',
+                    'message': 'Loại file không hợp lệ. Vui lòng tải lên file ảnh.',
                     'error_type': 'invalid_file'
                 })
 
-            # Optimize the uploaded image
-            logger.info("Step 1: Optimizing uploaded image")
+            logger.info("Bước 1: Tối ưu hóa ảnh tải lên")
             optimized_image, error = optimize_image(image_file)
             if error:
-                logger.error(f"Image optimization failed: {error}")
+                logger.error(f"Lỗi tối ưu hóa ảnh: {error}")
                 return JsonResponse({
                     'success': False,
                     'message': error,
                     'error_type': 'optimization_error'
                 })
-            logger.info("Image optimization successful")
+            logger.info("Tối ưu hóa ảnh thành công")
             
-            # Load and process the optimized image
             try:
-                logger.info("Step 2: Loading optimized image")
+                logger.info("Bước 2: Đang tải ảnh đã tối ưu")
                 uploaded_image = face_recognition.load_image_file(optimized_image)
-                logger.info(f"Image loaded successfully. Shape: {uploaded_image.shape}")
+                logger.info(f"Tải ảnh thành công. Kích thước: {uploaded_image.shape}")
             except Exception as e:
-                logger.error(f"Error loading image: {str(e)}")
+                logger.error(f"Lỗi tải ảnh: {str(e)}")
                 logger.error(traceback.format_exc())
                 return JsonResponse({
                     'success': False,
-                    'message': 'Error loading image. Please try again with a different photo.',
+                    'message': 'Lỗi tải ảnh. Vui lòng thử lại với ảnh khác.',
                     'error_type': 'image_load_error'
                 })
             
-            # Detect faces in the image
             try:
-                logger.info("Step 3: Detecting faces")
+                logger.info("Bước 3: Phát hiện khuôn mặt")
                 face_locations = face_recognition.face_locations(uploaded_image, model="hog")
-                logger.info(f"Number of faces detected: {len(face_locations)}")
+                logger.info(f"Số khuôn mặt phát hiện được: {len(face_locations)}")
                 
                 if not face_locations:
-                    logger.warning("No face detected in the image")
+                    logger.warning("Không phát hiện khuôn mặt trong ảnh")
                     return JsonResponse({
                         'success': False,
-                        'message': 'No face detected in the image. Please ensure your face is clearly visible.',
+                        'message': 'Không phát hiện khuôn mặt trong ảnh. Vui lòng đảm bảo khuôn mặt hiển thị rõ ràng.',
                         'error_type': 'no_face_detected'
                     })
                 
                 if len(face_locations) > 1:
-                    logger.warning("Multiple faces detected in the image")
+                    logger.warning("Phát hiện nhiều khuôn mặt trong ảnh")
                     return JsonResponse({
                         'success': False,
-                        'message': 'Multiple faces detected. Please ensure only one face is in the frame.',
+                        'message': 'Phát hiện nhiều khuôn mặt. Vui lòng chỉ để một khuôn mặt trong khung hình.',
                         'error_type': 'multiple_faces'
                     })
                 
-                logger.info(f"Face location: {face_locations[0]}")
+                logger.info(f"Vị trí khuôn mặt: {face_locations[0]}")
             except Exception as e:
-                logger.error(f"Face detection error: {str(e)}")
+                logger.error(f"Lỗi phát hiện khuôn mặt: {str(e)}")
                 logger.error(traceback.format_exc())
                 return JsonResponse({
                     'success': False,
-                    'message': 'Error detecting faces. Please ensure good lighting and clear face visibility.',
+                    'message': 'Lỗi phát hiện khuôn mặt. Vui lòng đảm bảo ánh sáng tốt và khuôn mặt rõ ràng.',
                     'error_type': 'face_detection_error'
                 })
             
-            # Get face encoding of the captured image
             try:
-                logger.info("Step 4: Getting face encoding")
+                logger.info("Bước 4: Tạo mã hóa khuôn mặt")
                 face_encoding = face_recognition.face_encodings(uploaded_image, face_locations)[0]
-                logger.info("Face encoding generated successfully")
+                logger.info("Tạo mã hóa khuôn mặt thành công")
             except Exception as e:
-                logger.error(f"Face encoding error: {str(e)}")
+                logger.error(f"Lỗi mã hóa khuôn mặt: {str(e)}")
                 logger.error(traceback.format_exc())
                 return JsonResponse({
                     'success': False,
-                    'message': 'Error processing face features. Please try again with a clearer photo.',
+                    'message': 'Lỗi xử lý đặc trưng khuôn mặt. Vui lòng thử lại với ảnh rõ nét hơn.',
                     'error_type': 'encoding_error'
                 })
 
-            # For regular users, verify their own face
             if not request.user.is_staff:
                 current_employee = get_object_or_404(Employee, user=request.user)
                 if not current_employee.face_encoding:
                     return JsonResponse({
                         'success': False,
-                        'message': 'No registered face found for your account. Please contact administrator.',
+                        'message': 'Chưa đăng ký khuôn mặt cho tài khoản của bạn. Vui lòng liên hệ quản trị viên.',
                         'error_type': 'no_registered_face'
                     })
                 
-                # Compare with the employee's face encoding
                 stored_encoding = np.frombuffer(current_employee.face_encoding)
                 matches = face_recognition.compare_faces([stored_encoding], face_encoding)
                 face_distances = face_recognition.face_distance([stored_encoding], face_encoding)
@@ -700,7 +688,7 @@ def process_auto_attendance(request):
                 if not matches[0]:
                     return JsonResponse({
                         'success': False,
-                        'message': 'Face does not match your registered face. Please ensure you are using your own account.',
+                        'message': 'Khuôn mặt không khớp với khuôn mặt đã đăng ký. Vui lòng đảm bảo bạn đang sử dụng đúng tài khoản của mình.',
                         'error_type': 'face_mismatch'
                     })
                 
@@ -708,11 +696,10 @@ def process_auto_attendance(request):
                 if confidence < 60:
                     return JsonResponse({
                         'success': False,
-                        'message': 'Face verification confidence too low. Please try again with better lighting.',
+                        'message': 'Độ tin cậy nhận diện khuôn mặt quá thấp. Vui lòng thử lại với điều kiện ánh sáng tốt hơn.',
                         'error_type': 'low_confidence'
                     })
             else:
-                # For admin users, find the best matching face from all employees
                 employees = Employee.objects.exclude(face_encoding__isnull=True)
                 known_face_encodings = []
                 known_employees = []
@@ -725,11 +712,10 @@ def process_auto_attendance(request):
                 if not known_face_encodings:
                     return JsonResponse({
                         'success': False,
-                        'message': 'No registered faces found in the system.',
+                        'message': 'Không tìm thấy khuôn mặt đã đăng ký nào trong hệ thống.',
                         'error_type': 'no_registered_faces'
                     })
                 
-                # Find the best match
                 face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
                 best_match_index = np.argmin(face_distances)
                 confidence = (1 - face_distances[best_match_index]) * 100
@@ -737,18 +723,15 @@ def process_auto_attendance(request):
                 if confidence >= 60:
                     current_employee = known_employees[best_match_index]
                 elif confidence >= 50:
-                    # For admin, allow marking attendance with medium confidence (50-60%)
                     current_employee = known_employees[best_match_index]
-                    logger.warning(f"Medium confidence match ({confidence:.2f}%) for employee {current_employee.employee_id}")
+                    logger.warning(f"Độ tin cậy trung bình ({confidence:.2f}%) cho nhân viên {current_employee.employee_id}")
                 else:
-                    # Reject if confidence is too low (< 50%)
                     return JsonResponse({
                         'success': False,
-                        'message': f'Confidence too low ({confidence:.2f}%). Could not reliably identify any employee.',
+                        'message': f'Độ tin cậy quá thấp ({confidence:.2f}%). Không thể xác định chính xác nhân viên.',
                         'error_type': 'low_confidence'
                     })
             
-            # Process attendance
             today = date.today()
             attendance, created = Attendance.objects.get_or_create(
                 employee=current_employee,
@@ -766,38 +749,38 @@ def process_auto_attendance(request):
                 if not attendance.check_out:
                     attendance.check_out = current_time
                     attendance.save()
-                    status = "Checked Out"
+                    status = "Đã chấm công ra"
                 else:
-                    status = "Already Checked Out"
+                    status = "Đã chấm công đủ"
             else:
-                status = "Checked In"
+                status = "Đã chấm công vào"
             
-            logger.info(f"Successfully processed attendance for employee {current_employee.id}")
+            logger.info(f"Xử lý chấm công thành công cho nhân viên {current_employee.id}")
             
             return JsonResponse({
                 'success': True,
-                'message': f'Successfully recognized {current_employee.user.get_full_name()}!',
+                'message': f'Đã nhận diện thành công {current_employee.user.get_full_name()}!',
                 'employee_name': current_employee.user.get_full_name(),
                 'employee_id': current_employee.employee_id,
                 'department': current_employee.department.name,
                 'attendance_status': status,
-                'timestamp': current_time.strftime('%I:%M %p'),
+                'timestamp': current_time.strftime('%H:%M'),
                 'confidence': f'{confidence:.2f}%'
             })
                 
         except Exception as e:
-            logger.error(f"Unexpected error in face recognition process: {str(e)}")
+            logger.error(f"Lỗi không mong đợi trong quá trình nhận diện khuôn mặt: {str(e)}")
             logger.error(traceback.format_exc())
             return JsonResponse({
                 'success': False,
-                'message': f'Unexpected error: {str(e)}. Please try again or contact administrator.',
+                'message': f'Lỗi không mong đợi: {str(e)}. Vui lòng thử lại hoặc liên hệ quản trị viên.',
                 'error_type': 'unexpected_error'
             })
     
-    logger.error("Invalid request: No image file provided")
+    logger.error("Yêu cầu không hợp lệ: Không có file ảnh")
     return JsonResponse({
         'success': False,
-        'message': 'Invalid request. Please provide an image.',
+        'message': 'Yêu cầu không hợp lệ. Vui lòng cung cấp ảnh.',
         'error_type': 'invalid_request'
     })
 
@@ -816,9 +799,9 @@ def delete_employee(request, employee_id):
             # Delete associated user account
             user.delete()
             
-            messages.success(request, f'Employee {employee.employee_id} has been deleted successfully.')
+            messages.success(request, f'Đã xóa nhân viên {employee.employee_id} thành công.')
     except Exception as e:
-        messages.error(request, f'Error deleting employee: {str(e)}')
+        messages.error(request, f'Lỗi khi xóa nhân viên: {str(e)}')
     
     return redirect('employee:employee_list')
 
@@ -837,7 +820,7 @@ def regenerate_face_encoding(request, employee_id):
             face_locations = face_recognition.face_locations(image)
             
             if not face_locations:
-                messages.error(request, 'No face detected in the stored image. Please upload a new photo.')
+                messages.error(request, 'Không phát hiện khuôn mặt trong ảnh đã lưu. Vui lòng tải lên ảnh mới.')
                 return redirect('employee:edit_employee', employee_id=employee_id)
             
             # Generate face encoding
@@ -847,11 +830,11 @@ def regenerate_face_encoding(request, employee_id):
             employee.face_encoding = face_encoding.tobytes()
             employee.save()
             
-            messages.success(request, f'Face encoding regenerated successfully for {employee.user.get_full_name()}')
+            messages.success(request, f'Tạo lại mã hóa khuôn mặt thành công cho {employee.user.get_full_name()}')
         else:
-            messages.error(request, 'No face image found for this employee')
+            messages.error(request, 'Không tìm thấy ảnh khuôn mặt cho nhân viên này')
     except Exception as e:
-        messages.error(request, f'Error regenerating face encoding: {str(e)}')
+        messages.error(request, f'Lỗi khi tạo lại mã hóa khuôn mặt: {str(e)}')
     
     return redirect('employee:edit_employee', employee_id=employee_id)
 
@@ -1188,7 +1171,6 @@ def check_in(request):
         employee = get_object_or_404(Employee, user=request.user)
         today = timezone.localdate()
         
-        # Check if attendance already exists
         attendance, created = Attendance.objects.get_or_create(
             employee=employee,
             date=today,
@@ -1319,10 +1301,17 @@ def resolve_feedback(request, feedback_id):
         if resolution_notes:
             feedback.resolve(notes=resolution_notes)
             messages.success(request, 'Phản hồi đã được xử lý thành công!')
+            # Check if request is AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'success', 'message': 'Phản hồi đã được xử lý thành công!'})
         else:
             messages.error(request, 'Vui lòng nhập ghi chú xử lý!')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'Vui lòng nhập ghi chú xử lý!'}, status=400)
     
-    return redirect('employee:feedback_list')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'error', 'message': 'Phương thức không được hỗ trợ!'}, status=405)
+    return redirect('employee:feedback_detail', feedback_id=feedback_id)
 
 @staff_member_required
 def export_feedback_list(request):
@@ -1400,3 +1389,10 @@ def export_feedback_list(request):
     response['Content-Disposition'] = 'attachment; filename=danh_sach_phan_hoi.xlsx'
     wb.save(response)
     return response
+
+@staff_member_required
+def feedback_detail(request, feedback_id):
+    feedback = get_object_or_404(Feedback, id=feedback_id)
+    return render(request, 'employee/feedback_detail.html', {
+        'feedback': feedback
+    })

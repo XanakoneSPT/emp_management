@@ -33,6 +33,7 @@ urlpatterns = [
     path('check-out/', views.check_out, name='check_out'),
     path('submit-feedback/', views.submit_feedback, name='submit_feedback'),
     path('feedback/', views.feedback_list, name='feedback_list'),
+    path('feedback/<int:feedback_id>/', views.feedback_detail, name='feedback_detail'),
     path('feedback/<int:feedback_id>/resolve/', views.resolve_feedback, name='resolve_feedback'),
     path('feedback/export/', views.export_feedback_list, name='export_feedback_list'),
 ] 

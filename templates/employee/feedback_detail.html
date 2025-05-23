@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi Tiết Phản Hồi - Hệ Thống Quản Lý Nhân Viên{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="h3 mb-0">Chi Tiết Phản Hồi</h2>
+                    <!-- <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 small">
+                            <li class="breadcrumb-item"><a href="{% url 'employee:dashboard' %}">Trang Chủ</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'employee:feedback_list' %}">Phản Hồi</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Chi Tiết</li>
+                        </ol>
+                    </nav> -->
+                </div>
+                <a href="{% url 'employee:feedback_list' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-arrow-left me-2"></i>Quay Lại
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Sidebar Information First (for mobile) -->
+        <div class="col-lg-4 order-lg-2">
+            <!-- Employee Information -->
+            <div class="card shadow-sm h-auto">
+                <div class="card-header bg-white py-2">
+                    <h6 class="card-title mb-0">Thông Tin Nhân Viên</h6>
+                </div>
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="avatar-circle">
+                                <span class="initials">{{ feedback.employee.user.get_full_name|make_list|slice:":2"|join:"" }}</span>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">{{ feedback.employee.user.get_full_name }}</h6>
+                            <p class="text-muted small mb-0">{{ feedback.employee.employee_id }}</p>
+                        </div>
+                    </div>
+                    <div class="border-top pt-2">
+                        <p class="mb-2 small">
+                            <i class="fas fa-building me-2 text-primary"></i>
+                            {{ feedback.employee.department.name }}
+                        </p>
+                        <p class="mb-0 small">
+                            <i class="fas fa-briefcase me-2 text-primary"></i>
+                            {{ feedback.employee.position }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {% if not feedback.is_resolved %}
+            <!-- Resolution Form -->
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-white py-2">
+                    <h6 class="card-title mb-0">Xử Lý Phản Hồi</h6>
+                </div>
+                <div class="card-body py-3">
+                    <form method="post" action="{% url 'employee:resolve_feedback' feedback.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="resolutionNotes" class="form-label small">Ghi Chú Xử Lý</label>
+                            <textarea class="form-control form-control-sm" id="resolutionNotes" name="resolution_notes" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                            <i class="fas fa-check me-2"></i>Xác Nhận Xử Lý
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Main Feedback Information -->
+        <div class="col-lg-8 order-lg-1">
+            <div class="card shadow-sm h-auto">
+                <div class="card-header bg-white py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">Nội Dung Phản Hồi</h6>
+                        <span class="badge {% if feedback.is_resolved %}bg-success{% else %}bg-warning{% endif %} px-2 py-1">
+                            {% if feedback.is_resolved %}
+                                <i class="fas fa-check-circle me-1"></i>Đã Xử Lý
+                            {% else %}
+                                <i class="fas fa-clock me-1"></i>Chưa Xử Lý
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body py-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-2">
+                                <p class="text-muted small mb-1">Loại Phản Hồi</p>
+                                <p class="mb-0"><i class="fas fa-tag me-2 text-primary"></i>{{ feedback.get_feedback_type_display }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-2">
+                                <p class="text-muted small mb-1">Thời Gian Gửi</p>
+                                <p class="mb-0"><i class="fas fa-calendar-alt me-2 text-primary"></i>{{ feedback.submitted_at|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-2">
+                                <p class="text-muted small mb-1">Nội Dung</p>
+                                <p class="mb-0">{{ feedback.content }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if feedback.is_resolved %}
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-white py-2">
+                    <h6 class="card-title mb-0">Thông Tin Xử Lý</h6>
+                </div>
+                <div class="card-body py-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-2">
+                                <p class="text-muted small mb-1">Thời Gian Xử Lý</p>
+                                <p class="mb-0"><i class="fas fa-clock me-2 text-success"></i>{{ feedback.resolved_at|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-2">
+                                <p class="text-muted small mb-1">Ghi Chú Xử Lý</p>
+                                <p class="mb-0">{{ feedback.resolution_notes }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    background-color: #4e73df;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.initials {
+    font-size: 16px;
+    color: white;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.badge {
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.border {
+    border-color: rgba(0,0,0,.125) !important;
+}
+
+.card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .order-lg-2 {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %} 
