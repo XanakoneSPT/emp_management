@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 
-{% block title %}Register Face - Employee Management System{% endblock %}
+{% block title %}Đăng Ký Khuôn Mặt - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Register Your Face</h5>
+                <h5 class="card-title mb-0">Đăng Ký Khuôn Mặt</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Please make sure you are in a well-lit area and your face is clearly visible.
+                    <i class="fas fa-info-circle"></i> Vui lòng đảm bảo bạn đang ở nơi có đủ ánh sáng và khuôn mặt của bạn được nhìn thấy rõ ràng.
                 </div>
 
                 <div class="text-center mb-4">
@@ -26,13 +26,13 @@
                     
                     <div class="d-grid gap-2">
                         <button type="button" id="startCamera" class="btn btn-primary">
-                            <i class="fas fa-camera"></i> Open Camera
+                            <i class="fas fa-camera"></i> Mở Camera
                         </button>
                         <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;">
-                            <i class="fas fa-camera-retro"></i> Capture Photo
+                            <i class="fas fa-camera-retro"></i> Chụp Ảnh
                         </button>
                         <button type="submit" id="submitBtn" class="btn btn-primary" style="display: none;">
-                            <i class="fas fa-save"></i> Register Face
+                            <i class="fas fa-save"></i> Đăng Ký Khuôn Mặt
                         </button>
                     </div>
                 </form>

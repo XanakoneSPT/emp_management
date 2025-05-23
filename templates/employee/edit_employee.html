@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Edit Employee - Employee Management System{% endblock %}
+{% block title %}Chỉnh Sửa Nhân Viên - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-12 mb-3">
         <a href="{% url 'employee:employee_list' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to List
+            <i class="fas fa-arrow-left"></i> Quay Lại Danh Sách
         </a>
     </div>
 </div>
@@ -15,9 +15,9 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Edit Employee: {{ employee.user.get_full_name }} ({{ employee.employee_id }})</h5>
+                <h5 class="card-title mb-0">Chỉnh Sửa Nhân Viên: {{ employee.user.get_full_name }} ({{ employee.employee_id }})</h5>
                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                    <i class="fas fa-trash"></i> Delete Employee
+                    <i class="fas fa-trash"></i> Xóa Nhân Viên
                 </button>
             </div>
             <div class="card-body">
@@ -27,37 +27,37 @@
                     <div class="row">
                         <!-- User Account Information -->
                         <div class="col-md-6 mb-3">
-                            <h6 class="mb-3">Account Information</h6>
+                            <h6 class="mb-3">Thông Tin Tài Khoản</h6>
                             <div class="mb-3">
-                                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                                <label for="{{ form.username.id_for_label }}" class="form-label">Tên đăng nhập</label>
                                 {{ form.username }}
                                 {% if form.username.errors %}
                                 <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.password.id_for_label }}" class="form-label">Password (leave blank to keep current)</label>
+                                <label for="{{ form.password.id_for_label }}" class="form-label">Mật khẩu (để trống nếu không thay đổi)</label>
                                 {{ form.password }}
                                 {% if form.password.errors %}
                                 <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.confirm_password.id_for_label }}" class="form-label">Confirm Password</label>
+                                <label for="{{ form.confirm_password.id_for_label }}" class="form-label">Xác nhận mật khẩu</label>
                                 {{ form.confirm_password }}
                                 {% if form.confirm_password.errors %}
                                 <div class="invalid-feedback d-block">{{ form.confirm_password.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">Họ</label>
                                 {{ form.first_name }}
                                 {% if form.first_name.errors %}
                                 <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Tên</label>
                                 {{ form.last_name }}
                                 {% if form.last_name.errors %}
                                 <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
@@ -74,37 +74,37 @@
 
                         <!-- Employee Information -->
                         <div class="col-md-6 mb-3">
-                            <h6 class="mb-3">Employee Information</h6>
+                            <h6 class="mb-3">Thông Tin Nhân Viên</h6>
                             <div class="mb-3">
-                                <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
+                                <label for="{{ form.department.id_for_label }}" class="form-label">Phòng ban</label>
                                 {{ form.department }}
                                 {% if form.department.errors %}
                                 <div class="invalid-feedback d-block">{{ form.department.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.position.id_for_label }}" class="form-label">Position</label>
+                                <label for="{{ form.position.id_for_label }}" class="form-label">Chức vụ</label>
                                 {{ form.position }}
                                 {% if form.position.errors %}
                                 <div class="invalid-feedback d-block">{{ form.position.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">Số điện thoại</label>
                                 {{ form.phone_number }}
                                 {% if form.phone_number.errors %}
                                 <div class="invalid-feedback d-block">{{ form.phone_number.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                                <label for="{{ form.address.id_for_label }}" class="form-label">Địa chỉ</label>
                                 {{ form.address }}
                                 {% if form.address.errors %}
                                 <div class="invalid-feedback d-block">{{ form.address.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="{{ form.joining_date.id_for_label }}" class="form-label">Joining Date</label>
+                                <label for="{{ form.joining_date.id_for_label }}" class="form-label">Ngày vào làm</label>
                                 {{ form.joining_date }}
                                 {% if form.joining_date.errors %}
                                 <div class="invalid-feedback d-block">{{ form.joining_date.errors }}</div>
@@ -114,17 +114,17 @@
 
                         <!-- Face Registration -->
                         <div class="col-12 mb-4">
-                            <h6 class="mb-3">Face Registration</h6>
+                            <h6 class="mb-3">Đăng Ký Khuôn Mặt</h6>
                             <div class="row">
                                 <div class="col-md-6">
                                     <!-- Current Face Image -->
                                     {% if employee.face_image %}
                                     <div class="mb-3">
-                                        <label class="form-label">Current Face ID</label>
-                                        <img src="{{ employee.face_image.url }}" alt="Current Face ID" class="img-fluid rounded mb-2">
+                                        <label class="form-label">Ảnh Khuôn Mặt Hiện Tại</label>
+                                        <img src="{{ employee.face_image.url }}" alt="Ảnh Khuôn Mặt Hiện Tại" class="img-fluid rounded mb-2">
                                         <div class="mt-2">
                                             <a href="{% url 'employee:regenerate_face_encoding' employee.id %}" class="btn btn-warning btn-sm">
-                                                <i class="fas fa-sync"></i> Regenerate Face Data
+                                                <i class="fas fa-sync"></i> Tạo Lại Dữ Liệu Khuôn Mặt
                                             </a>
                                         </div>
                                     </div>
@@ -137,19 +137,19 @@
                                     </div>
                                     <div class="d-grid gap-2">
                                         <button type="button" id="startCamera" class="btn btn-primary">
-                                            <i class="fas fa-camera"></i> Use Camera
+                                            <i class="fas fa-camera"></i> Sử Dụng Camera
                                         </button>
                                         <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;" data-employee-id="{{ employee.employee_id }}">
-                                            <i class="fas fa-camera-retro"></i> Capture Photo
+                                            <i class="fas fa-camera-retro"></i> Chụp Ảnh
                                         </button>
                                         <button type="button" id="uploadButton" class="btn btn-info" onclick="document.getElementById('face_image').click()">
-                                            <i class="fas fa-upload"></i> Upload Photo
+                                            <i class="fas fa-upload"></i> Tải Ảnh Lên
                                         </button>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="{{ form.face_image.id_for_label }}" class="form-label">New Face Image</label>
+                                        <label for="{{ form.face_image.id_for_label }}" class="form-label">Ảnh Khuôn Mặt Mới</label>
                                         <input type="file" id="face_image" name="face_image" accept="image/*" class="form-control" style="display: none;">
                                         {% if form.face_image.errors %}
                                         <div class="invalid-feedback d-block">{{ form.face_image.errors }}</div>
@@ -161,31 +161,31 @@
 
                         <!-- Salary Information -->
                         <div class="col-12">
-                            <h6 class="mb-3">Salary Information</h6>
+                            <h6 class="mb-3">Thông Tin Lương</h6>
                             <div class="row">
                                 <div class="col-md-3 mb-3">
-                                    <label for="{{ form.base_salary.id_for_label }}" class="form-label">Base Salary</label>
+                                    <label for="{{ form.base_salary.id_for_label }}" class="form-label">Lương cơ bản</label>
                                     {{ form.base_salary }}
                                     {% if form.base_salary.errors %}
                                     <div class="invalid-feedback d-block">{{ form.base_salary.errors }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="{{ form.hourly_rate.id_for_label }}" class="form-label">Hourly Rate</label>
+                                    <label for="{{ form.hourly_rate.id_for_label }}" class="form-label">Lương theo giờ</label>
                                     {{ form.hourly_rate }}
                                     {% if form.hourly_rate.errors %}
                                     <div class="invalid-feedback d-block">{{ form.hourly_rate.errors }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="{{ form.overtime_rate.id_for_label }}" class="form-label">Overtime Rate</label>
+                                    <label for="{{ form.overtime_rate.id_for_label }}" class="form-label">Lương tăng ca</label>
                                     {{ form.overtime_rate }}
                                     {% if form.overtime_rate.errors %}
                                     <div class="invalid-feedback d-block">{{ form.overtime_rate.errors }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="{{ form.standard_work_hours.id_for_label }}" class="form-label">Standard Work Hours</label>
+                                    <label for="{{ form.standard_work_hours.id_for_label }}" class="form-label">Số giờ làm tiêu chuẩn</label>
                                     {{ form.standard_work_hours }}
                                     {% if form.standard_work_hours.errors %}
                                     <div class="invalid-feedback d-block">{{ form.standard_work_hours.errors }}</div>
@@ -197,17 +197,17 @@
 
                     {% if form.non_field_errors %}
                     <div class="alert alert-danger">
-                        <strong>Please correct the following errors:</strong>
+                        <strong>Vui lòng sửa các lỗi sau:</strong>
                         {{ form.non_field_errors }}
                     </div>
                     {% endif %}
 
                     <div class="mt-4">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Update Employee
+                            <i class="fas fa-save"></i> Cập Nhật Nhân Viên
                         </button>
                         <a href="{% url 'employee:employee_list' %}" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Cancel
+                            <i class="fas fa-times"></i> Hủy
                         </a>
                     </div>
                 </form>
@@ -221,17 +221,17 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <h5 class="modal-title" id="deleteModalLabel">Xác Nhận Xóa</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete employee <strong>{{ employee.user.get_full_name }}</strong> ({{ employee.employee_id }})?</p>
-                <p class="text-danger"><strong>Warning:</strong> This action cannot be undone. All associated data (attendance records, salary records, etc.) will be permanently deleted.</p>
+                <p>Bạn có chắc chắn muốn xóa nhân viên <strong>{{ employee.user.get_full_name }}</strong> ({{ employee.employee_id }})?</p>
+                <p class="text-danger"><strong>Cảnh báo:</strong> Hành động này không thể hoàn tác. Tất cả dữ liệu liên quan (chấm công, lương, v.v.) sẽ bị xóa vĩnh viễn.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                 <a href="{% url 'employee:delete_employee' employee.id %}" class="btn btn-danger">
-                    <i class="fas fa-trash"></i> Delete Employee
+                    <i class="fas fa-trash"></i> Xóa Nhân Viên
                 </a>
             </div>
         </div>

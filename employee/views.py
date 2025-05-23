@@ -753,10 +753,17 @@ def process_auto_attendance(request):
                 
                 if confidence >= 60:
                     current_employee = known_employees[best_match_index]
-                else:
-                    # For admin, allow marking attendance even with low confidence
+                elif confidence >= 50:
+                    # For admin, allow marking attendance with medium confidence (50-60%)
                     current_employee = known_employees[best_match_index]
-                    logger.warning(f"Low confidence match ({confidence:.2f}%) for employee {current_employee.employee_id}")
+                    logger.warning(f"Medium confidence match ({confidence:.2f}%) for employee {current_employee.employee_id}")
+                else:
+                    # Reject if confidence is too low (< 50%)
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'Confidence too low ({confidence:.2f}%). Could not reliably identify any employee.',
+                        'error_type': 'low_confidence'
+                    })
             
             # Process attendance
             today = date.today()

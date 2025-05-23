@@ -5,43 +5,51 @@ from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 class Department(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=100, verbose_name='Tên phòng ban')
+    description = models.TextField(blank=True, verbose_name='Mô tả')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        verbose_name = 'Phòng Ban'
+        verbose_name_plural = 'Phòng Ban'
 
 class Employee(models.Model):
     POSITION_CHOICES = [
-        ('manager', 'Manager'),
-        ('team_lead', 'Team Lead'),
-        ('senior_developer', 'Senior Developer'),
-        ('developer', 'Developer'),
-        ('junior_developer', 'Junior Developer'),
-        ('hr_manager', 'HR Manager'),
-        ('hr_executive', 'HR Executive'),
-        ('accountant', 'Accountant'),
-        ('receptionist', 'Receptionist'),
-        ('office_assistant', 'Office Assistant'),
+        ('manager', 'Quản Lý'),
+        ('team_lead', 'Trưởng Nhóm'),
+        ('senior_developer', 'Lập Trình Viên Cao Cấp'),
+        ('developer', 'Lập Trình Viên'),
+        ('junior_developer', 'Lập Trình Viên Mới'),
+        ('hr_manager', 'Trưởng Phòng Nhân Sự'),
+        ('hr_executive', 'Nhân Viên Nhân Sự'),
+        ('accountant', 'Kế Toán'),
+        ('receptionist', 'Lễ Tân'),
+        ('office_assistant', 'Trợ Lý Văn Phòng'),
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    employee_id = models.CharField(max_length=10, unique=True, editable=False)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    position = models.CharField(max_length=100, choices=POSITION_CHOICES)
-    phone_number = models.CharField(max_length=15)
-    address = models.TextField()
-    face_image = models.ImageField(upload_to='face_images/')
-    face_encoding = models.BinaryField(null=True, blank=True)
-    joining_date = models.DateField()
-    is_active = models.BooleanField(default=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Người dùng')
+    employee_id = models.CharField(max_length=10, unique=True, editable=False, verbose_name='Mã nhân viên')
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, verbose_name='Phòng ban')
+    position = models.CharField(max_length=100, choices=POSITION_CHOICES, verbose_name='Chức vụ')
+    phone_number = models.CharField(max_length=15, verbose_name='Số điện thoại')
+    address = models.TextField(verbose_name='Địa chỉ')
+    face_image = models.ImageField(upload_to='face_images/', verbose_name='Ảnh khuôn mặt')
+    face_encoding = models.BinaryField(null=True, blank=True, verbose_name='Mã hóa khuôn mặt')
+    joining_date = models.DateField(verbose_name='Ngày vào làm')
+    is_active = models.BooleanField(default=True, verbose_name='Đang làm việc')
     
     # Salary related fields
-    base_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    hourly_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    overtime_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    standard_work_hours = models.IntegerField(default=8)  # Standard hours per day
+    base_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Lương cơ bản')
+    hourly_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Lương theo giờ')
+    overtime_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Lương tăng ca')
+    standard_work_hours = models.IntegerField(default=8, verbose_name='Số giờ làm tiêu chuẩn')  # Standard hours per day
+
+    class Meta:
+        verbose_name = 'Nhân Viên'
+        verbose_name_plural = 'Nhân Viên'
 
     def save(self, *args, **kwargs):
         if not self.employee_id:
@@ -122,23 +130,27 @@ class Employee(models.Model):
         }
 
 class Attendance(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    date = models.DateField(default=timezone.now)
-    check_in = models.DateTimeField(null=True, blank=True)
-    check_out = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=[
-        ('present', 'Present'),
-        ('absent', 'Absent'),
-        ('late', 'Late'),
-        ('half_day', 'Half Day')
-    ])
-    face_confidence = models.FloatField(null=True, blank=True)
+    STATUS_CHOICES = [
+        ('present', 'Có mặt'),
+        ('absent', 'Vắng mặt'),
+        ('late', 'Đi muộn'),
+        ('half_day', 'Nửa ngày')
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, verbose_name='Nhân viên')
+    date = models.DateField(default=timezone.now, verbose_name='Ngày')
+    check_in = models.DateTimeField(null=True, blank=True, verbose_name='Giờ vào')
+    check_out = models.DateTimeField(null=True, blank=True, verbose_name='Giờ ra')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, verbose_name='Trạng thái')
+    face_confidence = models.FloatField(null=True, blank=True, verbose_name='Độ tin cậy nhận diện')
     
     class Meta:
         unique_together = ['employee', 'date']
+        verbose_name = 'Chấm Công'
+        verbose_name_plural = 'Chấm Công'
 
     def __str__(self):
-        return f"{self.employee.user.get_full_name()} - {self.date} - {self.status}"
+        return f"{self.employee.user.get_full_name()} - {self.date} - {self.get_status_display()}"
     
     def calculate_working_hours(self):
         if self.check_in and self.check_out:
@@ -147,21 +159,23 @@ class Attendance(models.Model):
         return 0
 
 class Salary(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    year = models.IntegerField()
-    month = models.IntegerField()
-    base_pay = models.DecimalField(max_digits=10, decimal_places=2)
-    regular_hours_pay = models.DecimalField(max_digits=10, decimal_places=2)
-    overtime_pay = models.DecimalField(max_digits=10, decimal_places=2)
-    total_salary = models.DecimalField(max_digits=10, decimal_places=2)
-    total_days = models.IntegerField()
-    total_working_hours = models.DecimalField(max_digits=6, decimal_places=2)
-    overtime_hours = models.DecimalField(max_digits=6, decimal_places=2)
-    generated_at = models.DateTimeField(auto_now_add=True)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, verbose_name='Nhân viên')
+    year = models.IntegerField(verbose_name='Năm')
+    month = models.IntegerField(verbose_name='Tháng')
+    base_pay = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Lương cơ bản')
+    regular_hours_pay = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Lương giờ làm')
+    overtime_pay = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Lương tăng ca')
+    total_salary = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Tổng lương')
+    total_days = models.IntegerField(verbose_name='Tổng số ngày')
+    total_working_hours = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Tổng giờ làm')
+    overtime_hours = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Giờ tăng ca')
+    generated_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')
     
     class Meta:
         unique_together = ['employee', 'year', 'month']
         ordering = ['-year', '-month']
+        verbose_name = 'Lương'
+        verbose_name_plural = 'Lương'
 
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.month}/{self.year}"
@@ -174,16 +188,18 @@ class Feedback(models.Model):
         ('other', 'Khác'),
     ]
     
-    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='feedbacks')
-    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPES)
-    content = models.TextField()
-    submitted_at = models.DateTimeField(auto_now_add=True)
-    is_resolved = models.BooleanField(default=False)
-    resolved_at = models.DateTimeField(null=True, blank=True)
-    resolution_notes = models.TextField(null=True, blank=True)
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='feedbacks', verbose_name='Nhân viên')
+    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPES, verbose_name='Loại phản hồi')
+    content = models.TextField(verbose_name='Nội dung')
+    submitted_at = models.DateTimeField(auto_now_add=True, verbose_name='Thời gian gửi')
+    is_resolved = models.BooleanField(default=False, verbose_name='Đã xử lý')
+    resolved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian xử lý')
+    resolution_notes = models.TextField(null=True, blank=True, verbose_name='Ghi chú xử lý')
     
     class Meta:
         ordering = ['-submitted_at']
+        verbose_name = 'Phản Hồi'
+        verbose_name_plural = 'Phản Hồi'
     
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.get_feedback_type_display()} - {self.submitted_at.strftime('%Y-%m-%d %H:%M')}"

@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 
-{% block title %}Mark Attendance - Employee Management System{% endblock %}
+{% block title %}Chấm Công - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Mark Attendance</h5>
+                <h5 class="card-title mb-0">Chấm Công</h5>
             </div>
             <div class="card-body">
                 <div class="text-center mb-4">
@@ -22,13 +22,13 @@
                     
                     <div class="d-grid gap-2">
                         <button type="button" id="startCamera" class="btn btn-primary">
-                            <i class="fas fa-camera"></i> Open Camera
+                            <i class="fas fa-camera"></i> Mở Camera
                         </button>
                         <button type="button" id="capturePhoto" class="btn btn-success" style="display: none;">
-                            <i class="fas fa-camera-retro"></i> Capture Photo
+                            <i class="fas fa-camera-retro"></i> Chụp Ảnh
                         </button>
                         <button type="submit" id="submitBtn" class="btn btn-primary" style="display: none;">
-                            <i class="fas fa-check"></i> Mark Attendance
+                            <i class="fas fa-check"></i> Xác Nhận Chấm Công
                         </button>
                     </div>
                 </form>
@@ -46,28 +46,39 @@ let preview = document.getElementById('preview');
 let startButton = document.getElementById('startCamera');
 let captureButton = document.getElementById('capturePhoto');
 let submitButton = document.getElementById('submitBtn');
+let faceInput = document.getElementById('face_image');
 let stream = null;
 
-startButton.addEventListener('click', async () => {
+// Start camera
+startButton.addEventListener('click', async function() {
     try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'user',
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            } 
+        });
         video.srcObject = stream;
         video.style.display = 'block';
+        preview.style.display = 'none';
         startButton.style.display = 'none';
         captureButton.style.display = 'block';
+        submitButton.style.display = 'none';
         video.play();
     } catch (err) {
-        console.error('Error accessing camera:', err);
-        alert('Error accessing camera. Please make sure you have granted camera permissions.');
+        console.error("Error:", err);
+        alert("Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập camera của trình duyệt.");
     }
 });
 
-captureButton.addEventListener('click', () => {
+// Capture photo
+captureButton.addEventListener('click', function() {
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     let image = canvas.toDataURL('image/jpeg');
     preview.src = image;
-    preview.style.display = 'block';
     video.style.display = 'none';
+    preview.style.display = 'block';
     captureButton.style.display = 'none';
     submitButton.style.display = 'block';
     
@@ -76,12 +87,14 @@ captureButton.addEventListener('click', () => {
         .then(res => res.blob())
         .then(blob => {
             const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            document.getElementById('face_image').files = dataTransfer.files;
+            const container = new DataTransfer();
+            container.items.add(file);
+            faceInput.files = container.files;
         });
-    
-    // Stop the camera
+});
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
     }

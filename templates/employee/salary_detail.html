@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Salary Detail - Employee Management System{% endblock %}
+{% block title %}Chi Tiết Lương - Hệ Thống Quản Lý Nhân Viên{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-12 mb-3">
         <a href="{% if user.is_staff %}{% url 'employee:salary_list' %}{% else %}{% url 'employee:dashboard' %}{% endif %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back
+            <i class="fas fa-arrow-left"></i> Quay Lại
         </a>
     </div>
 </div>
@@ -15,39 +15,39 @@
     <div class="col-md-4">
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="card-title mb-0">Employee Information</h5>
+                <h5 class="card-title mb-0">Thông Tin Nhân Viên</h5>
             </div>
             <div class="card-body">
-                <p><strong>Name:</strong> {{ salary.employee.user.get_full_name }}</p>
-                <p><strong>Employee ID:</strong> {{ salary.employee.employee_id }}</p>
-                <p><strong>Department:</strong> {{ salary.employee.department.name }}</p>
-                <p><strong>Position:</strong> {{ salary.employee.position }}</p>
+                <p><strong>Họ và tên:</strong> {{ salary.employee.user.get_full_name }}</p>
+                <p><strong>Mã nhân viên:</strong> {{ salary.employee.employee_id }}</p>
+                <p><strong>Phòng ban:</strong> {{ salary.employee.department.name }}</p>
+                <p><strong>Chức vụ:</strong> {{ salary.employee.position }}</p>
             </div>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Salary Breakdown</h5>
+                <h5 class="card-title mb-0">Chi Tiết Lương</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table">
                         <tbody>
                             <tr>
-                                <th>Base Pay:</th>
-                                <td>${{ salary.base_pay }}</td>
+                                <th>Lương cơ bản:</th>
+                                <td>{{ salary.base_pay|floatformat:0 }} VNĐ</td>
                             </tr>
                             <tr>
-                                <th>Regular Hours Pay:</th>
-                                <td>${{ salary.regular_hours_pay }}</td>
+                                <th>Lương giờ làm:</th>
+                                <td>{{ salary.regular_hours_pay|floatformat:0 }} VNĐ</td>
                             </tr>
                             <tr>
-                                <th>Overtime Pay:</th>
-                                <td>${{ salary.overtime_pay }}</td>
+                                <th>Lương tăng ca:</th>
+                                <td>{{ salary.overtime_pay|floatformat:0 }} VNĐ</td>
                             </tr>
                             <tr class="table-primary">
-                                <th>Total Salary:</th>
-                                <td><strong>${{ salary.total_salary }}</strong></td>
+                                <th>Tổng lương:</th>
+                                <td><strong>{{ salary.total_salary|floatformat:0 }} VNĐ</strong></td>
                             </tr>
                         </tbody>
                     </table>
@@ -59,31 +59,31 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Attendance Details ({{ salary.month }}/{{ salary.year }})</h5>
+                <h5 class="card-title mb-0">Thống Kê Chấm Công</h5>
             </div>
             <div class="card-body">
-                <div class="row mb-3">
+                <div class="row mb-4">
                     <div class="col-md-4">
-                        <div class="card bg-primary text-white">
-                            <div class="card-body">
-                                <h6 class="card-title">Total Working Days</h6>
-                                <h2 class="mb-0">{{ salary.total_days }}</h2>
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">Tổng Ngày Làm</h6>
+                                <h3>{{ salary.total_days }}</h3>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card bg-success text-white">
-                            <div class="card-body">
-                                <h6 class="card-title">Working Hours</h6>
-                                <h2 class="mb-0">{{ salary.total_working_hours }}</h2>
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">Tổng Giờ Làm</h6>
+                                <h3>{{ salary.total_working_hours|floatformat:1 }}</h3>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card bg-warning text-white">
-                            <div class="card-body">
-                                <h6 class="card-title">Overtime Hours</h6>
-                                <h2 class="mb-0">{{ salary.overtime_hours }}</h2>
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">Giờ Tăng Ca</h6>
+                                <h3>{{ salary.overtime_hours|floatformat:1 }}</h3>
                             </div>
                         </div>
                     </div>
@@ -93,11 +93,11 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Check In</th>
-                                <th>Check Out</th>
-                                <th>Working Hours</th>
-                                <th>Status</th>
+                                <th>Ngày</th>
+                                <th>Giờ vào</th>
+                                <th>Giờ ra</th>
+                                <th>Số giờ làm</th>
+                                <th>Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -106,16 +106,19 @@
                                 <td>{{ record.date }}</td>
                                 <td>{{ record.check_in|time|default:'-' }}</td>
                                 <td>{{ record.check_out|time|default:'-' }}</td>
-                                <td>{{ record.calculate_working_hours }} hours</td>
+                                <td>{{ record.calculate_working_hours|floatformat:1 }} giờ</td>
                                 <td>
                                     <span class="badge {% if record.status == 'present' %}bg-success{% elif record.status == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
-                                        {{ record.status|title }}
+                                        {% if record.status == 'present' %}Có mặt
+                                        {% elif record.status == 'late' %}Đi muộn
+                                        {% elif record.status == 'absent' %}Vắng mặt
+                                        {% else %}{{ record.status|title }}{% endif %}
                                     </span>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center">No attendance records found for this period</td>
+                                <td colspan="5" class="text-center">Không có dữ liệu chấm công trong kỳ này</td>
                             </tr>
                             {% endfor %}
                         </tbody>
